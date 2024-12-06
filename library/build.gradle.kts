@@ -10,13 +10,9 @@ repositories {
 }
 
 dependencies {
-    implementation("org.apache.commons:commons-math3:3.6.1")
     testImplementation(kotlin("test"))
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(8)
 }
