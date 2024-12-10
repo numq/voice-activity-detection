@@ -39,7 +39,7 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
     pointers.clear();
 }
 
-JNIEXPORT jlong JNICALL Java_com_github_numq_fvad_FVAD_initNative(JNIEnv *env, jclass thisClass) {
+JNIEXPORT jlong JNICALL Java_com_github_numq_kvad_fvad_FVAD_initNative(JNIEnv *env, jclass thisClass) {
     std::unique_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -60,7 +60,7 @@ JNIEXPORT jlong JNICALL Java_com_github_numq_fvad_FVAD_initNative(JNIEnv *env, j
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_fvad_FVAD_setModeNative(JNIEnv *env, jclass thisClass, jlong handle, jint mode) {
+Java_com_github_numq_kvad_fvad_FVAD_setModeNative(JNIEnv *env, jclass thisClass, jlong handle, jint mode) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -77,7 +77,7 @@ Java_com_github_numq_fvad_FVAD_setModeNative(JNIEnv *env, jclass thisClass, jlon
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_fvad_FVAD_setSampleRateNative(JNIEnv *env, jclass thisClass, jlong handle, jint sampleRate) {
+Java_com_github_numq_kvad_fvad_FVAD_setSampleRateNative(JNIEnv *env, jclass thisClass, jlong handle, jint sampleRate) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -94,8 +94,8 @@ Java_com_github_numq_fvad_FVAD_setSampleRateNative(JNIEnv *env, jclass thisClass
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_fvad_FVAD_processNative(JNIEnv *env, jclass thisClass, jlong handle, jbyteArray frame,
-                                             jint length) {
+Java_com_github_numq_kvad_fvad_FVAD_processNative(JNIEnv *env, jclass thisClass, jlong handle, jbyteArray frame,
+                                                  jint length) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -122,7 +122,7 @@ Java_com_github_numq_fvad_FVAD_processNative(JNIEnv *env, jclass thisClass, jlon
     }
 }
 
-JNIEXPORT void JNICALL Java_com_github_numq_fvad_FVAD_resetNative(JNIEnv *env, jclass thisClass, jlong handle) {
+JNIEXPORT void JNICALL Java_com_github_numq_kvad_fvad_FVAD_resetNative(JNIEnv *env, jclass thisClass, jlong handle) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -137,7 +137,7 @@ JNIEXPORT void JNICALL Java_com_github_numq_fvad_FVAD_resetNative(JNIEnv *env, j
     }
 }
 
-JNIEXPORT void JNICALL Java_com_github_numq_fvad_FVAD_freeNative(JNIEnv *env, jclass thisClass, jlong handle) {
+JNIEXPORT void JNICALL Java_com_github_numq_kvad_fvad_FVAD_freeNative(JNIEnv *env, jclass thisClass, jlong handle) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
