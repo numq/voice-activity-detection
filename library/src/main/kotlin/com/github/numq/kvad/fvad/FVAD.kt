@@ -1,4 +1,4 @@
-package com.numq.fvad
+package com.github.numq.kvad.fvad
 
 import java.lang.ref.Cleaner
 
