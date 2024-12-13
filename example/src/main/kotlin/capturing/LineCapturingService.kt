@@ -1,8 +1,10 @@
 package capturing
 
 import device.Device
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
@@ -35,36 +37,31 @@ class LineCapturingService : CapturingService {
             throw IllegalArgumentException("The specified format is not supported by this device")
         }
 
-        val targetDataLine = AudioSystem.getTargetDataLine(format, mixerInfo)
-
-        targetDataLine.open(format)
-
-        targetDataLine
+        AudioSystem.getTargetDataLine(format, mixerInfo).apply {
+            open(format)
+        }
     }
 
-    override fun capture(device: Device) = callbackFlow {
+    override fun capture(device: Device, chunkSize: Int) = callbackFlow {
         val targetDataLine = findMicrophone(device).getOrElse { throwable ->
             close(throwable)
             return@callbackFlow
         }
 
-        try {
-            targetDataLine.start()
+        targetDataLine.start()
 
-            val buffer = ByteArray(CapturingService.FRAME_SIZE * 2)
+        while (isActive) {
+            val chunk = ByteArray(chunkSize)
 
-            while (isActive) {
-                val bytesRead = targetDataLine.read(buffer, 0, buffer.size)
+            val bytesRead = targetDataLine.read(chunk, 0, chunk.size)
 
-                if (bytesRead > 0) {
-                    send(buffer.copyOfRange(0, bytesRead))
-                }
+            if (bytesRead > 0) {
+                send(chunk.copyOfRange(0, bytesRead))
             }
-        } finally {
-            targetDataLine.stop()
-            targetDataLine.close()
         }
 
+        targetDataLine.stop()
+
         awaitClose { targetDataLine.close() }
-    }
+    }.flowOn(Dispatchers.IO)
 }
