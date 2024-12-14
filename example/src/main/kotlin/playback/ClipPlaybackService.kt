@@ -40,13 +40,16 @@ class ClipPlaybackService : PlaybackService {
 
                 AudioSystem.getClip().use { clip ->
                     clip.open(audioFormat, pcmBytes, 0, pcmBytes.size)
+
                     CompletableDeferred<Unit>().apply {
                         clip.addLineListener { event ->
                             if (event.type == LineEvent.Type.STOP) {
                                 complete(Unit)
                             }
                         }
+
                         clip.start()
+
                         await()
                     }
                 }
