@@ -1,5 +1,5 @@
-package com.numq.kvad
+package com.github.numq.kvad
 
-enum class KVADMode {
+enum class VADMode {
     QUALITY, LOW_BITRATE, AGGRESSIVE, VERY_AGGRESSIVE
 }

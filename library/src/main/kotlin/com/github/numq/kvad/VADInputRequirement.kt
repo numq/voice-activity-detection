@@ -1,7 +1,7 @@
 package com.github.numq.kvad
 
-data class KVADInputRequirement(
-    val sampleRate: KVADSampleRate,
+data class VADInputRequirement(
+    val sampleRate: VADSampleRate,
     val millis: Int,
     val sizePerChannel: Int,
 )
