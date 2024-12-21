@@ -3,9 +3,9 @@ package com.github.numq.vad
 import com.github.numq.vad.fvad.FVAD
 
 interface VoiceActivityDetection : AutoCloseable {
-    val settings: VoiceActivityDetectionSettings
-    fun changeSettings(settings: VoiceActivityDetectionSettings): Result<Unit>
-    fun process(pcmBytes: ByteArray): Result<Boolean>
+    val mode: VoiceActivityDetectionMode
+    fun changeMode(mode: VoiceActivityDetectionMode): Result<Unit>
+    fun process(pcmBytes: ByteArray, sampleRate: Int, channels: Int, cutOff: Boolean = false): Result<Boolean>
     fun reset(): Result<Unit>
 
     companion object {
@@ -18,10 +18,10 @@ interface VoiceActivityDetection : AutoCloseable {
             isInitialized = true
         }
 
-        fun create(settings: VoiceActivityDetectionSettings): Result<VoiceActivityDetection> = runCatching {
+        fun create(): Result<VoiceActivityDetection> = runCatching {
             check(isInitialized) { "Native library is not initialized" }
 
-            NativeVoiceActivityDetection(initialSettings = settings, fvad = FVAD())
+            NativeVoiceActivityDetection(fvad = FVAD())
         }
     }
 }
