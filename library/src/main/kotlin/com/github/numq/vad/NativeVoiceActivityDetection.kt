@@ -112,10 +112,10 @@ internal class NativeVoiceActivityDetection(
 
     override fun reset() = runCatching {
         fvad.reset()
-    }.recoverCatching {
-        throw IllegalStateException("Unable to reset")
     }.mapCatching {
         changeMode(mode).getOrThrow()
+    }.recoverCatching {
+        throw IllegalStateException("Unable to reset")
     }
 
     override fun close() = runCatching {
