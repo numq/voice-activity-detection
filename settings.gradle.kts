@@ -1,3 +1,3 @@
-rootProject.name = "kvad"
+rootProject.name = "vad"
 
 include("library", "example")
