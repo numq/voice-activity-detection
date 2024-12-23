@@ -53,31 +53,36 @@ internal class NativeVoiceActivityDetection(
     }
 
     private fun resample(inputData: ByteArray, inputSampleRate: Int): ByteArray {
-        val outputLength = (inputData.size * SAMPLE_RATE_HZ) / inputSampleRate
-        val outputData = ByteArray(outputLength)
+        require(inputSampleRate > 0) { "Input sample rate must be greater than 0" }
+        require(inputData.isNotEmpty()) { "Input data must not be empty" }
 
+        val outputLength = (inputData.size.toLong() * SAMPLE_RATE_HZ / inputSampleRate).toInt()
+        require(outputLength >= 0) { "Calculated output length must not be negative" }
+
+        val outputData = ByteArray(outputLength)
         val ratio = inputSampleRate.toFloat() / SAMPLE_RATE_HZ
+
         var outputIndex = 0
 
         for (i in 0 until outputLength / 2) {
             val srcIndex = (i * ratio).toInt()
+            if (srcIndex + 1 >= inputData.size / 2) break
 
-            if (srcIndex + 1 < inputData.size / 2) {
-                val leftSample =
-                    (inputData[srcIndex * 2].toInt() and 0xFF) or ((inputData[srcIndex * 2 + 1].toInt() and 0xFF) shl 8)
-                val rightSample =
-                    (inputData[(srcIndex + 1) * 2].toInt() and 0xFF) or ((inputData[(srcIndex + 1) * 2 + 1].toInt() and 0xFF) shl 8)
+            val leftSample =
+                (inputData[srcIndex * 2].toInt() and 0xFF) or ((inputData[srcIndex * 2 + 1].toInt() and 0xFF) shl 8)
+            val rightSample =
+                (inputData[(srcIndex + 1) * 2].toInt() and 0xFF) or ((inputData[(srcIndex + 1) * 2 + 1].toInt() and 0xFF) shl 8)
 
-                val sample = ((leftSample + rightSample) / 2).toShort()
+            val sample = ((leftSample + rightSample) / 2).toShort()
 
-                outputData[outputIndex++] = (sample.toInt() and 0xFF).toByte()
-                outputData[outputIndex++] = ((sample.toInt() shr 8) and 0xFF).toByte()
-            }
+            outputData[outputIndex++] = (sample.toInt() and 0xFF).toByte()
+            outputData[outputIndex++] = ((sample.toInt() shr 8) and 0xFF).toByte()
         }
+
         return outputData
     }
 
-    override fun process(pcmBytes: ByteArray, sampleRate: Int, channels: Int, cutOff: Boolean) = runCatching {
+    override fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int, cutOff: Boolean) = runCatching {
         require(channels > 0) { "Channel count must be at least 1" }
 
         if (pcmBytes.isEmpty()) return@runCatching false

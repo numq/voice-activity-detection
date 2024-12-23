@@ -17,7 +17,7 @@ interface VoiceActivityDetection : AutoCloseable {
     fun changeMode(mode: VoiceActivityDetectionMode): Result<Unit>
 
     /**
-     * Processes PCM audio data to detect voice activity.
+     * Detects voice activity in the given PCM audio data.
      *
      * @param pcmBytes the audio data in PCM format.
      * @param sampleRate the sampling rate of the audio data in Hz.
@@ -25,7 +25,7 @@ interface VoiceActivityDetection : AutoCloseable {
      * @param cutOff if true, truncates the data by dropping the last incomplete chunk; otherwise, fills any incomplete chunk with zeroes.
      * @return a [Result] containing true if voice activity is detected, false otherwise.
      */
-    fun process(pcmBytes: ByteArray, sampleRate: Int, channels: Int, cutOff: Boolean = false): Result<Boolean>
+    fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int, cutOff: Boolean = false): Result<Boolean>
 
     /**
      * Resets the voice activity detection internal state.
