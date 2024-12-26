@@ -19,10 +19,7 @@ internal class FVAD : AutoCloseable {
         private external fun setModeNative(handle: Long, mode: Int): Int
 
         @JvmStatic
-        private external fun setSampleRateNative(handle: Long, sampleRate: Int): Int
-
-        @JvmStatic
-        private external fun processNative(handle: Long, frame: ByteArray, length: Int): Int
+        private external fun processNative(handle: Long, pcmBytes: ByteArray): Int
 
         @JvmStatic
         private external fun resetNative(handle: Long)
@@ -33,9 +30,7 @@ internal class FVAD : AutoCloseable {
 
     fun setMode(mode: Int) = setModeNative(handle = nativeHandle, mode = mode)
 
-    fun setSampleRate(sampleRate: Int) = setSampleRateNative(handle = nativeHandle, sampleRate = sampleRate)
-
-    fun process(frame: ByteArray, length: Int) = processNative(handle = nativeHandle, frame = frame, length = length)
+    fun process(pcmBytes: ByteArray) = processNative(handle = nativeHandle, pcmBytes = pcmBytes)
 
     fun reset() = resetNative(handle = nativeHandle)
 

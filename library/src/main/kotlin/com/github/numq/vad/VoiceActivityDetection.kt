@@ -41,12 +41,12 @@ interface VoiceActivityDetection : AutoCloseable {
          * Loads the native library.
          *
          * @param libfvad the path to the libfvad library.
-         * @param libfvadjni the path to the libfvadjni library.
+         * @param libvad the path to the libvad library.
          * @return a [Result] indicating the success or failure of the operation.
          */
-        fun load(libfvad: String, libfvadjni: String) = runCatching {
+        fun load(libfvad: String, libvad: String) = runCatching {
             System.load(libfvad)
-            System.load(libfvadjni)
+            System.load(libvad)
         }.onSuccess {
             isInitialized = true
         }

@@ -99,7 +99,7 @@ internal class NativeVoiceActivityDetection(
 
                 System.arraycopy(chunk.toByteArray(), 0, paddedChunk, 0, chunk.size)
 
-                val result = fvad.process(paddedChunk, CHUNK_SIZE_BYTES)
+                val result = fvad.process(paddedChunk)
 
                 when (result) {
                     -1 -> throw IllegalStateException("Unable to process input at chunk $index")

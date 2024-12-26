@@ -53,7 +53,7 @@ class VoiceActivityDetectionTest {
 
             VoiceActivityDetection.load(
                 libfvad = "$pathToBinaries\\libfvad.dll",
-                libfvadjni = "$pathToBinaries\\libfvadjni.dll"
+                libvad = "$pathToBinaries\\libvad.dll"
             ).getOrThrow()
         }
 
