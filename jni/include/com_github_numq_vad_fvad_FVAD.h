@@ -12,11 +12,8 @@ JNIEXPORT jlong JNICALL Java_com_github_numq_vad_fvad_FVAD_initNative
 JNIEXPORT jint JNICALL Java_com_github_numq_vad_fvad_FVAD_setModeNative
         (JNIEnv *, jclass, jlong, jint);
 
-JNIEXPORT jint JNICALL Java_com_github_numq_vad_fvad_FVAD_setSampleRateNative
-        (JNIEnv *, jclass, jlong, jint);
-
 JNIEXPORT jint JNICALL Java_com_github_numq_vad_fvad_FVAD_processNative
-        (JNIEnv *, jclass, jlong, jbyteArray, jint);
+        (JNIEnv *, jclass, jlong, jbyteArray);
 
 JNIEXPORT void JNICALL Java_com_github_numq_vad_fvad_FVAD_resetNative
         (JNIEnv *, jclass, jlong);

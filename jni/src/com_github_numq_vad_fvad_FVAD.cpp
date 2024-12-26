@@ -77,7 +77,7 @@ Java_com_github_numq_vad_fvad_FVAD_setModeNative(JNIEnv *env, jclass thisClass, 
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_vad_fvad_FVAD_setSampleRateNative(JNIEnv *env, jclass thisClass, jlong handle, jint sampleRate) {
+Java_com_github_numq_vad_fvad_FVAD_processNative(JNIEnv *env, jclass thisClass, jlong handle, jbyteArray pcmBytes) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -86,34 +86,21 @@ Java_com_github_numq_vad_fvad_FVAD_setSampleRateNative(JNIEnv *env, jclass thisC
             throw std::runtime_error("Invalid handle");
         }
 
-        return fvad_set_sample_rate(it->second.get(), sampleRate);
-    } catch (const std::exception &e) {
-        handleException(env, std::string("Exception in setSampleRateNative method: ") + e.what());
-        return -1;
-    }
-}
-
-JNIEXPORT jint JNICALL
-Java_com_github_numq_vad_fvad_FVAD_processNative(JNIEnv *env, jclass thisClass, jlong handle, jbyteArray frame,
-                                                  jint length) {
-    std::shared_lock<std::shared_mutex> lock(mutex);
-
-    try {
-        auto it = pointers.find(handle);
-        if (it == pointers.end()) {
-            throw std::runtime_error("Invalid handle");
+        auto length = env->GetArrayLength(pcmBytes);
+        if (length == 0) {
+            throw std::runtime_error("Array is empty");
         }
 
-        jbyte *byteArray = env->GetByteArrayElements(frame, nullptr);
+        jbyte *byteArray = env->GetByteArrayElements(pcmBytes, nullptr);
         if (byteArray == nullptr) {
             throw std::runtime_error("Failed to get byte array elements");
         }
 
-        const int16_t *pcm = reinterpret_cast<const int16_t *>(byteArray);
+        const auto *pcm = reinterpret_cast<const int16_t *>(byteArray);
+
+        env->ReleaseByteArrayElements(pcmBytes, byteArray, JNI_ABORT);
 
         jint result = fvad_process(it->second.get(), pcm, length / sizeof(int16_t));
-
-        env->ReleaseByteArrayElements(frame, byteArray, 0);
 
         return result;
     } catch (const std::exception &e) {
