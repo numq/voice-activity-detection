@@ -4,7 +4,7 @@ import java.lang.ref.Cleaner
 
 internal class FVAD : AutoCloseable {
     private val nativeHandle = initNative().also { handle ->
-        require(handle != 0L) { "Unable to initialize FVAD" }
+        require(handle != -1L) { "Unable to initialize FVAD" }
     }
 
     private val cleanable = cleaner.register(this) { freeNative(nativeHandle) }

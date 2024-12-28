@@ -2,28 +2,28 @@ package picker
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.github.numq.kvad.KVADMode
+import com.github.numq.vad.VoiceActivityDetectionMode
 
 @Composable
 fun ModePicker(
     modifier: Modifier,
-    currentMode: KVADMode,
-    changeCurrentMode: (KVADMode) -> Unit,
+    currentMode: VoiceActivityDetectionMode,
+    changeCurrentMode: (VoiceActivityDetectionMode) -> Unit,
 ) {
     Picker(
         modifier = modifier,
-        items = KVADMode.entries.map { mode ->
+        items = VoiceActivityDetectionMode.entries.map { mode ->
             when (mode) {
-                KVADMode.QUALITY -> "Quality"
+                VoiceActivityDetectionMode.QUALITY -> "Quality"
 
-                KVADMode.LOW_BITRATE -> "Low bitrate"
+                VoiceActivityDetectionMode.LOW_BITRATE -> "Low bitrate"
 
-                KVADMode.AGGRESSIVE -> "Aggressive"
+                VoiceActivityDetectionMode.AGGRESSIVE -> "Aggressive"
 
-                KVADMode.VERY_AGGRESSIVE -> "Very aggressive"
+                VoiceActivityDetectionMode.VERY_AGGRESSIVE -> "Very aggressive"
             }
         },
-        selectedIndex = KVADMode.entries.indexOf(currentMode),
-        onItemSelected = { index -> changeCurrentMode(KVADMode.entries.elementAt(index)) }
+        selectedIndex = VoiceActivityDetectionMode.entries.indexOf(currentMode),
+        onItemSelected = { index -> changeCurrentMode(VoiceActivityDetectionMode.entries.elementAt(index)) }
     )
 }
