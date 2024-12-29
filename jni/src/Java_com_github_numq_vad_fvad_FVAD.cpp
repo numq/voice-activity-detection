@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <memory>
 #include "fvad.h"
-#include "com_github_numq_vad_fvad_FVAD.h"
+#include "Java_com_github_numq_vad_fvad_FVAD.h"
 
 static jclass exceptionClass;
 static std::shared_mutex mutex;
@@ -45,7 +45,7 @@ JNIEXPORT jlong JNICALL Java_com_github_numq_vad_fvad_FVAD_initNative(JNIEnv *en
     try {
         auto fvad = std::shared_ptr<Fvad>(fvad_new(), fvad_free);
         if (!fvad) {
-            throw std::runtime_error("Failed to create FVAD instance");
+            throw std::runtime_error("Failed to create native instance");
         }
 
         auto handle = reinterpret_cast<jlong>(fvad.get());

@@ -3,7 +3,7 @@ project(fvadjni VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(vad SHARED src/com_github_numq_vad_fvad_FVAD.cpp)
+add_library(vad SHARED src/Java_com_github_numq_vad_fvad_FVAD.cpp)
 
 find_package(JNI)
 
