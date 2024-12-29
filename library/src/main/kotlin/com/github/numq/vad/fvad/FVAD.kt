@@ -4,28 +4,28 @@ import java.lang.ref.Cleaner
 
 internal class FVAD : AutoCloseable {
     private val nativeHandle = initNative().also { handle ->
-        require(handle != -1L) { "Unable to initialize FVAD" }
+        require(handle != -1L) { "Unable to initialize native library" }
     }
 
     private val cleanable = cleaner.register(this) { freeNative(nativeHandle) }
 
-    companion object {
-        private val cleaner = Cleaner.create()
+    private companion object {
+        val cleaner: Cleaner = Cleaner.create()
 
         @JvmStatic
-        private external fun initNative(): Long
+        external fun initNative(): Long
 
         @JvmStatic
-        private external fun setModeNative(handle: Long, mode: Int): Int
+        external fun setModeNative(handle: Long, mode: Int): Int
 
         @JvmStatic
-        private external fun processNative(handle: Long, pcmBytes: ByteArray): Int
+        external fun processNative(handle: Long, pcmBytes: ByteArray): Int
 
         @JvmStatic
-        private external fun resetNative(handle: Long)
+        external fun resetNative(handle: Long)
 
         @JvmStatic
-        private external fun freeNative(handle: Long)
+        external fun freeNative(handle: Long)
     }
 
     fun setMode(mode: Int) = setModeNative(handle = nativeHandle, mode = mode)

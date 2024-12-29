@@ -35,7 +35,7 @@ interface VoiceActivityDetection : AutoCloseable {
     fun reset(): Result<Unit>
 
     companion object {
-        private var isInitialized = false
+        private var isLoaded = false
 
         /**
          * Loads the native library.
@@ -48,7 +48,7 @@ interface VoiceActivityDetection : AutoCloseable {
             System.load(libfvad)
             System.load(libvad)
         }.onSuccess {
-            isInitialized = true
+            isLoaded = true
         }
 
         /**
@@ -58,7 +58,7 @@ interface VoiceActivityDetection : AutoCloseable {
          * @throws IllegalStateException if the native libraries are not initialized or if there is an issue with the underlying native library.
          */
         fun create(): Result<VoiceActivityDetection> = runCatching {
-            check(isInitialized) { "Native library is not initialized" }
+            check(isLoaded) { "Native binaries were not loaded" }
 
             NativeVoiceActivityDetection(fvad = FVAD())
         }
