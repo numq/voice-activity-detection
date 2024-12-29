@@ -30,7 +30,7 @@ fun InteractionScreen(
     vad: VoiceActivityDetection,
     capturingService: CapturingService,
     playbackService: PlaybackService,
-    onError: (String) -> Unit,
+    handleThrowable: (Throwable) -> Unit,
 ) {
     var mode by remember { mutableStateOf(vad.mode) }
 
@@ -47,7 +47,7 @@ fun InteractionScreen(
         capturingJob = null
 
         if (vad.mode != mode) {
-            vad.changeMode(mode).onFailure { onError(it.localizedMessage) }
+            vad.changeMode(mode).onFailure(handleThrowable)
         }
 
         capturingJob = when (val device = capturingDevice) {
@@ -58,18 +58,18 @@ fun InteractionScreen(
                     val chunkSize = device.sampleRate / 1_000 * device.channels
 
                     capturingService.capture(device = device, chunkSize = chunkSize).catch {
-                        onError(it.localizedMessage)
+                        handleThrowable(it)
                     }.collect { pcmBytes ->
                         isSpeechDetected = vad.detect(
                             pcmBytes = pcmBytes,
                             sampleRate = device.sampleRate,
                             channels = device.channels
-                        ).onFailure { onError(it.localizedMessage) }.getOrNull() == true
+                        ).onFailure(handleThrowable).getOrNull() == true
 
                         if (isSpeechDetected) {
-                            playbackService.write(pcmBytes = pcmBytes).onFailure { onError(it.localizedMessage) }
+                            playbackService.write(pcmBytes = pcmBytes).onFailure(handleThrowable)
                         } else {
-                            playbackService.play().onFailure { onError(it.localizedMessage) }
+                            playbackService.play().onFailure(handleThrowable)
                         }
                     }
                 }
@@ -89,7 +89,7 @@ fun InteractionScreen(
             ) { changedMode ->
                 vad.changeMode(changedMode).onSuccess {
                     mode = vad.mode
-                }.onFailure { onError(it.localizedMessage) }
+                }.onFailure(handleThrowable)
             }
 
             if (isSpeechDetected) {

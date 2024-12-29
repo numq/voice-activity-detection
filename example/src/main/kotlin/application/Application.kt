@@ -35,27 +35,27 @@ fun main() {
 
         val (capturingDevices, setCapturingDevices) = remember { mutableStateOf(emptyList<Device>()) }
 
-        val (error, setError) = remember { mutableStateOf<String?>(null) }
-
-        error?.let {
-            Snackbar(
-                modifier = Modifier.padding(8.dp),
-                action = {
-                    Button(onClick = { setError(null) }) { Text("Dismiss") }
-                }
-            ) { Text(it) }
-        }
-
         val vad = remember { VoiceActivityDetection.create().getOrThrow() }
 
         val capturingService = remember { CapturingService.create().getOrThrow() }
 
         val playbackService = remember { PlaybackService.create().getOrThrow() }
 
+        val (throwable, setThrowable) = remember { mutableStateOf<Throwable?>(null) }
+
+        throwable?.let { t ->
+            Snackbar(
+                modifier = Modifier.padding(8.dp),
+                action = {
+                    Button(onClick = { setThrowable(null) }) { Text("Dismiss") }
+                }
+            ) { Text(t.localizedMessage) }
+        }
+
         LaunchedEffect(Unit) {
             deviceService.listCapturingDevices()
                 .onSuccess(setCapturingDevices)
-                .onFailure { setError("Failed to list capturing devices: ${it.message}") }
+                .onFailure(setThrowable)
         }
 
         DisposableEffect(Unit) {
@@ -71,7 +71,7 @@ fun main() {
                 vad = vad,
                 capturingService = capturingService,
                 playbackService = playbackService,
-                onError = setError
+                handleThrowable = setThrowable
             )
         }
     }
