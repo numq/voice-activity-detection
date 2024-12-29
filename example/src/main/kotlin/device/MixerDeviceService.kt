@@ -5,7 +5,7 @@ import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.SourceDataLine
 import javax.sound.sampled.TargetDataLine
 
-class MixerDeviceService : DeviceService {
+internal class MixerDeviceService : DeviceService {
     private fun createDevice(name: String, format: AudioFormat) = with(format) {
         Device(
             name = name,

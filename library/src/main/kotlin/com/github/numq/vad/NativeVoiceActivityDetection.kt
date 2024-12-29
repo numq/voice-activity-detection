@@ -1,6 +1,8 @@
 package com.github.numq.vad
 
 import com.github.numq.vad.fvad.FVAD
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 internal class NativeVoiceActivityDetection(
     private val fvad: FVAD,
@@ -25,28 +27,20 @@ internal class NativeVoiceActivityDetection(
         require(channels > 0) { "Number of channels must be greater than 0" }
         require(pcmBytes.size % (channels * 2) == 0) { "PCM byte size must be a multiple of the frame size (channels * 2)" }
 
-        val frameSize = channels * 2
-        val outputLength = pcmBytes.size / channels
-        val monoBytes = ByteArray(outputLength)
+        val monoBytes = ByteArray(pcmBytes.size / channels)
+        val inputBuffer = ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN)
+        val outputBuffer = ByteBuffer.wrap(monoBytes).order(ByteOrder.LITTLE_ENDIAN)
 
-        var inputIndex = 0
-        var outputIndex = 0
+        val shortMin = Short.MIN_VALUE.toLong()
+        val shortMax = Short.MAX_VALUE.toLong()
 
-        repeat(pcmBytes.size / frameSize) {
-            var sampleSum = 0
-
+        while (inputBuffer.remaining() >= channels * 2) {
+            var sampleSum = 0L
             for (channel in 0 until channels) {
-                val sample = (pcmBytes[inputIndex + channel * 2].toInt() and 0xFF) or
-                        ((pcmBytes[inputIndex + channel * 2 + 1].toInt() and 0xFF) shl 8)
-                sampleSum += sample
+                sampleSum += inputBuffer.short.toLong()
             }
-
-            val monoSample = (sampleSum / channels).toShort()
-
-            monoBytes[outputIndex++] = (monoSample.toInt() and 0xFF).toByte()
-            monoBytes[outputIndex++] = ((monoSample.toInt() shr 8) and 0xFF).toByte()
-
-            inputIndex += frameSize
+            val monoSample = (sampleSum / channels).coerceIn(shortMin, shortMax).toShort()
+            outputBuffer.putShort(monoSample)
         }
 
         return monoBytes
@@ -56,27 +50,26 @@ internal class NativeVoiceActivityDetection(
         require(inputSampleRate > 0) { "Input sample rate must be greater than 0" }
         require(inputData.isNotEmpty()) { "Input data must not be empty" }
 
-        val outputLength = (inputData.size.toLong() * SAMPLE_RATE_HZ / inputSampleRate).toInt()
-        require(outputLength >= 0) { "Calculated output length must not be negative" }
+        val inputBuffer = ByteBuffer.wrap(inputData).order(ByteOrder.LITTLE_ENDIAN)
+        val inputSampleCount = inputData.size / 2
+        val outputSampleCount = (inputSampleCount * SAMPLE_RATE_HZ / inputSampleRate.toDouble()).toInt()
+        val outputData = ByteArray(outputSampleCount * 2)
+        val outputBuffer = ByteBuffer.wrap(outputData).order(ByteOrder.LITTLE_ENDIAN)
 
-        val outputData = ByteArray(outputLength)
-        val ratio = inputSampleRate.toFloat() / SAMPLE_RATE_HZ
+        val step = inputSampleRate.toDouble() / SAMPLE_RATE_HZ
+        var inputIndex = 0.0
 
-        var outputIndex = 0
+        for (i in 0 until outputSampleCount) {
+            val srcIndex = inputIndex.toInt()
+            val fraction = inputIndex - srcIndex
 
-        for (i in 0 until outputLength / 2) {
-            val srcIndex = (i * ratio).toInt()
-            if (srcIndex + 1 >= inputData.size / 2) break
+            val leftSample = if (srcIndex < inputSampleCount) inputBuffer.getShort(srcIndex * 2).toInt() else 0
+            val rightSample = if (srcIndex + 1 < inputSampleCount) inputBuffer.getShort((srcIndex + 1) * 2).toInt() else leftSample
 
-            val leftSample =
-                (inputData[srcIndex * 2].toInt() and 0xFF) or ((inputData[srcIndex * 2 + 1].toInt() and 0xFF) shl 8)
-            val rightSample =
-                (inputData[(srcIndex + 1) * 2].toInt() and 0xFF) or ((inputData[(srcIndex + 1) * 2 + 1].toInt() and 0xFF) shl 8)
+            val interpolatedSample = (leftSample + fraction * (rightSample - leftSample)).toInt().toShort()
+            outputBuffer.putShort(interpolatedSample)
 
-            val sample = ((leftSample + rightSample) / 2).toShort()
-
-            outputData[outputIndex++] = (sample.toInt() and 0xFF).toByte()
-            outputData[outputIndex++] = ((sample.toInt() shr 8) and 0xFF).toByte()
+            inputIndex += step
         }
 
         return outputData

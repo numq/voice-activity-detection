@@ -10,7 +10,7 @@ import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
 
-class LineCapturingService : CapturingService {
+internal class LineCapturingService : CapturingService {
     private fun findMicrophone(device: Device) = runCatching {
         val format = with(device) {
             AudioFormat(
