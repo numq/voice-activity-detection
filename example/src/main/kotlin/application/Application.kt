@@ -1,5 +1,7 @@
 package application
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -9,6 +11,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
@@ -42,16 +45,7 @@ fun main() {
         val playbackService = remember { PlaybackService.create().getOrThrow() }
 
         val (throwable, setThrowable) = remember { mutableStateOf<Throwable?>(null) }
-
-        throwable?.let { t ->
-            Snackbar(
-                modifier = Modifier.padding(8.dp),
-                action = {
-                    Button(onClick = { setThrowable(null) }) { Text("Dismiss") }
-                }
-            ) { Text(t.localizedMessage) }
-        }
-
+        
         LaunchedEffect(Unit) {
             deviceService.listCapturingDevices()
                 .onSuccess(setCapturingDevices)
@@ -66,13 +60,23 @@ fun main() {
         }
 
         MaterialTheme {
-            InteractionScreen(
-                capturingDevices = capturingDevices,
-                vad = vad,
-                capturingService = capturingService,
-                playbackService = playbackService,
-                handleThrowable = setThrowable
-            )
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                InteractionScreen(
+                    capturingDevices = capturingDevices,
+                    vad = vad,
+                    capturingService = capturingService,
+                    playbackService = playbackService,
+                    handleThrowable = setThrowable
+                )
+                throwable?.let { t ->
+                    Snackbar(
+                        modifier = Modifier.padding(8.dp),
+                        action = {
+                            Button(onClick = { setThrowable(null) }) { Text("Dismiss") }
+                        }
+                    ) { Text(t.localizedMessage) }
+                }
+            }
         }
     }
 }
