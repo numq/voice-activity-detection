@@ -52,7 +52,10 @@ internal class NativeVoiceActivityDetection(
 
         val inputBuffer = ByteBuffer.wrap(inputData).order(ByteOrder.LITTLE_ENDIAN)
         val inputSampleCount = inputData.size / 2
-        val outputSampleCount = (inputSampleCount * SAMPLE_RATE_HZ / inputSampleRate.toDouble()).toInt()
+        val outputSampleCount = ((inputSampleCount.toLong() * SAMPLE_RATE_HZ) / inputSampleRate.toDouble()).toInt()
+
+        require(outputSampleCount >= 0) { "Output sample count must not be negative" }
+
         val outputData = ByteArray(outputSampleCount * 2)
         val outputBuffer = ByteBuffer.wrap(outputData).order(ByteOrder.LITTLE_ENDIAN)
 
@@ -64,7 +67,8 @@ internal class NativeVoiceActivityDetection(
             val fraction = inputIndex - srcIndex
 
             val leftSample = if (srcIndex < inputSampleCount) inputBuffer.getShort(srcIndex * 2).toInt() else 0
-            val rightSample = if (srcIndex + 1 < inputSampleCount) inputBuffer.getShort((srcIndex + 1) * 2).toInt() else leftSample
+            val rightSample =
+                if (srcIndex + 1 < inputSampleCount) inputBuffer.getShort((srcIndex + 1) * 2).toInt() else leftSample
 
             val interpolatedSample = (leftSample + fraction * (rightSample - leftSample)).toInt().toShort()
             outputBuffer.putShort(interpolatedSample)
