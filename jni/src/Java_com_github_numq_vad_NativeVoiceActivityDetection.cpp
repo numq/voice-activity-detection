@@ -1,9 +1,3 @@
-#include <iostream>
-#include <shared_mutex>
-#include <mutex>
-#include <unordered_map>
-#include <memory>
-#include "fvad.h"
 #include "Java_com_github_numq_vad_NativeVoiceActivityDetection.h"
 
 static jclass exceptionClass;
