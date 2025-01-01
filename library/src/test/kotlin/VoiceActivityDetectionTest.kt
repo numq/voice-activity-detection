@@ -15,7 +15,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
 class VoiceActivityDetectionTest {
-
     companion object {
         private val voiceActivityDetection by lazy { VoiceActivityDetection.create().getOrThrow() }
 

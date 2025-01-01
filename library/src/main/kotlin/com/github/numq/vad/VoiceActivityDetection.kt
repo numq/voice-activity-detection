@@ -1,7 +1,5 @@
 package com.github.numq.vad
 
-import com.github.numq.vad.fvad.FVAD
-
 interface VoiceActivityDetection : AutoCloseable {
     /**
      * The current mode of voice activity detection.
@@ -60,7 +58,7 @@ interface VoiceActivityDetection : AutoCloseable {
         fun create(): Result<VoiceActivityDetection> = runCatching {
             check(isLoaded) { "Native binaries were not loaded" }
 
-            NativeVoiceActivityDetection(fvad = FVAD())
+            DefaultVoiceActivityDetection(nativeVoiceActivityDetection = NativeVoiceActivityDetection())
         }
     }
 }
