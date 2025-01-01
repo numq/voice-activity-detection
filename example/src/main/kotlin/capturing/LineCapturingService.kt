@@ -42,7 +42,7 @@ internal class LineCapturingService : CapturingService {
         }
     }
 
-    override fun capture(device: Device, chunkSize: Int) = callbackFlow {
+    override suspend fun capture(device: Device, chunkSize: Int) = callbackFlow {
         val targetDataLine = findMicrophone(device).getOrElse { throwable ->
             close(throwable)
             return@callbackFlow

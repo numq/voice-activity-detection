@@ -4,7 +4,7 @@ import device.Device
 import kotlinx.coroutines.flow.Flow
 
 interface CapturingService {
-    fun capture(device: Device, chunkSize: Int): Flow<ByteArray>
+    suspend fun capture(device: Device, chunkSize: Int): Flow<ByteArray>
 
     companion object {
         fun create(): Result<CapturingService> = runCatching { LineCapturingService() }
