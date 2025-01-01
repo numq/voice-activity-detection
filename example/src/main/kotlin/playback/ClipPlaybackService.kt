@@ -1,7 +1,6 @@
 package playback
 
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.ByteArrayOutputStream
@@ -45,9 +44,5 @@ internal class ClipPlaybackService : PlaybackService {
         }.onFailure { println("Playback error: ${it.message}") }
     }
 
-    override fun close() = runBlocking {
-        mutex.withLock {
-            baos.close()
-        }
-    }
+    override fun close() = runCatching { baos.close() }.getOrDefault(Unit)
 }

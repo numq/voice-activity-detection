@@ -8,7 +8,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Snackbar
 import androidx.compose.material.Text
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -18,7 +17,6 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.singleWindowApplication
 import capturing.CapturingService
 import com.github.numq.vad.VoiceActivityDetection
-import device.Device
 import device.DeviceService
 import interaction.InteractionScreen
 import playback.PlaybackService
@@ -36,8 +34,6 @@ fun main() {
     singleWindowApplication(state = WindowState(width = 512.dp, height = 512.dp)) {
         val deviceService = remember { DeviceService.create().getOrThrow() }
 
-        val (capturingDevices, setCapturingDevices) = remember { mutableStateOf(emptyList<Device>()) }
-
         val vad = remember { VoiceActivityDetection.create().getOrThrow() }
 
         val capturingService = remember { CapturingService.create().getOrThrow() }
@@ -45,12 +41,6 @@ fun main() {
         val playbackService = remember { PlaybackService.create().getOrThrow() }
 
         val (throwable, setThrowable) = remember { mutableStateOf<Throwable?>(null) }
-        
-        LaunchedEffect(Unit) {
-            deviceService.listCapturingDevices()
-                .onSuccess(setCapturingDevices)
-                .onFailure(setThrowable)
-        }
 
         DisposableEffect(Unit) {
             onDispose {
@@ -62,7 +52,7 @@ fun main() {
         MaterialTheme {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                 InteractionScreen(
-                    capturingDevices = capturingDevices,
+                    deviceService = deviceService,
                     vad = vad,
                     capturingService = capturingService,
                     playbackService = playbackService,
