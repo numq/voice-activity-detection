@@ -41,7 +41,7 @@ internal class ClipPlaybackService : PlaybackService {
                     }
                 }
             }
-        }.onFailure { println("Playback error: ${it.message}") }
+        }
     }
 
     override fun close() = runCatching { baos.close() }.getOrDefault(Unit)
