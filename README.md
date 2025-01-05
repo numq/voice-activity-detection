@@ -8,23 +8,22 @@
 - Supports any sampling rate and number of channels due to resampling and downmixing
 - Supports different detection modes to balance between sensitivity and accuracy
 
-## Installation
-
-```kotlin
-dependencies {
-    implementation(file("/path/to/jar"))
-}
-```
-
 ## Usage
 
 > See the [example](example) module for implementation details
 
-1. Load binaries
+1. Download latest [release](https://github.com/numq/vad/releases)
+2. Add library dependency
+   ```kotlin
+   dependencies {
+       implementation(file("/path/to/jar"))
+   }
+   ```
+3. Load binaries
     ```kotlin
     VoiceActivityDetection.load(libfvad = "/path/to/libfvad", libvad = "/path/to/libvad")
     ```
-2. Instantiate a library
+4. Instantiate a library
     ```kotlin
     VoiceActivityDetection.create()
     ```
