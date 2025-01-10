@@ -73,7 +73,7 @@ class VoiceActivityDetectionTest {
         return ByteArray(totalSamples * channels * 2)
     }
 
-    private fun generatePcmBytes(sampleRate: Int, channels: Int, duration: Duration): ByteArray {
+    private fun generateNoise(sampleRate: Int, channels: Int, duration: Duration): ByteArray {
         val totalSamples = (sampleRate * (duration.inWholeMilliseconds / 1_000.0)).toInt()
         val pcmBytes = ByteArray(totalSamples * channels * 2)
 
@@ -123,9 +123,9 @@ class VoiceActivityDetectionTest {
     }
 
     @Test
-    fun `detect speech`() {
+    fun `detect noise`() {
         runDetectionTest(
-            generateData = ::generatePcmBytes,
+            generateData = ::generateNoise,
             assert = { assertTrue(it) }
         )
     }
