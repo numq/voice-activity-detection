@@ -5,7 +5,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import kotlin.math.sin
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration
@@ -27,6 +26,7 @@ class VoiceActivityDetectionTest {
             500.milliseconds,
             1.seconds,
             10.seconds,
+            30.seconds,
             1.minutes
         )
 
@@ -43,7 +43,6 @@ class VoiceActivityDetectionTest {
         )
 
         private const val AMPLITUDE = 32767 * 0.5
-        private const val FREQUENCY = 440.0
 
         @JvmStatic
         @BeforeAll
@@ -76,16 +75,11 @@ class VoiceActivityDetectionTest {
     private fun generateNoise(sampleRate: Int, channels: Int, duration: Duration): ByteArray {
         val totalSamples = (sampleRate * (duration.inWholeMilliseconds / 1_000.0)).toInt()
         val pcmBytes = ByteArray(totalSamples * channels * 2)
-
-        for (i in 0 until totalSamples) {
-            val sampleValue = (sin(2 * Math.PI * FREQUENCY * i / sampleRate) * AMPLITUDE).toInt()
-            for (ch in 0 until channels) {
-                val index = (i * channels + ch) * 2
-                pcmBytes[index] = (sampleValue and 0xFF).toByte()
-                pcmBytes[index + 1] = (sampleValue shr 8 and 0xFF).toByte()
-            }
+        for (i in pcmBytes.indices step 2) {
+            val randomSample = ((Math.random() - 0.5) * 2 * AMPLITUDE).toInt()
+            pcmBytes[i] = (randomSample and 0xFF).toByte()
+            pcmBytes[i + 1] = (randomSample shr 8 and 0xFF).toByte()
         }
-
         return pcmBytes
     }
 
