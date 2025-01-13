@@ -30,19 +30,7 @@ class VoiceActivityDetectionTest {
             1.minutes
         )
 
-        private val sampleRates = arrayOf(
-            4_000,
-            8_000,
-            32_000,
-            44_100,
-            48_000,
-            88_200,
-            96_000,
-            176_400,
-            192_000
-        )
-
-        private const val AMPLITUDE = 32767 * 0.5
+        private val sampleRates = arrayOf(4_000, 8_000, 32_000, 44_100, 48_000, 88_200, 96_000, 176_400, 192_000)
 
         @JvmStatic
         @BeforeAll
@@ -72,19 +60,8 @@ class VoiceActivityDetectionTest {
         return ByteArray(totalSamples * channels * 2)
     }
 
-    private fun generateNoise(sampleRate: Int, channels: Int, duration: Duration): ByteArray {
-        val totalSamples = (sampleRate * (duration.inWholeMilliseconds / 1_000.0)).toInt()
-        val pcmBytes = ByteArray(totalSamples * channels * 2)
-        for (i in pcmBytes.indices step 2) {
-            val randomSample = ((Math.random() - 0.5) * 2 * AMPLITUDE).toInt()
-            pcmBytes[i] = (randomSample and 0xFF).toByte()
-            pcmBytes[i + 1] = (randomSample shr 8 and 0xFF).toByte()
-        }
-        return pcmBytes
-    }
-
     private fun runDetectionTest(
-        generateData: (Int, Int, Duration) -> ByteArray,
+        loadData: (Int, Int, Duration) -> ByteArray,
         assert: (Boolean) -> Unit,
     ) = runTest {
         val measurements = mutableListOf<Duration>()
@@ -95,7 +72,7 @@ class VoiceActivityDetectionTest {
             durations.forEach { duration ->
                 for (channels in 1..2) {
                     sampleRates.forEach { sampleRate ->
-                        val pcmBytes = generateData(sampleRate, channels, duration)
+                        val pcmBytes = loadData(sampleRate, channels, duration)
 
                         measureTime {
                             assert(voiceActivityDetection.detect(pcmBytes, sampleRate, channels).getOrThrow())
@@ -109,18 +86,14 @@ class VoiceActivityDetectionTest {
     }
 
     @Test
-    fun `detect no speech`() {
-        runDetectionTest(
-            generateData = ::generateSilence,
-            assert = { assertFalse(it) }
-        )
+    fun `should not detect silence`() = runTest {
+        runDetectionTest(loadData = ::generateSilence, assert = { assertFalse(it) })
     }
 
     @Test
-    fun `detect noise`() {
-        runDetectionTest(
-            generateData = ::generateNoise,
-            assert = { assertTrue(it) }
-        )
+    fun `should detect speech`() = runTest {
+        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")?.also { println(it.file) }!!.readBytes()
+
+        assertTrue(voiceActivityDetection.detect(pcmBytes, 48_000, 1).getOrThrow())
     }
 }
