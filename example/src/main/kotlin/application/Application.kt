@@ -21,20 +21,24 @@ import device.DeviceService
 import interaction.InteractionScreen
 import playback.PlaybackService
 
+const val APP_NAME = "Voice Activity Detection"
+
 fun main() {
     val pathToBinaries = Thread.currentThread().contextClassLoader.getResource("bin")?.file
 
     checkNotNull(pathToBinaries) { "Binaries not found" }
 
-    VoiceActivityDetection.load(
+    VoiceActivityDetection.Fvad.load(
         libfvad = "$pathToBinaries\\libfvad.dll",
         libvad = "$pathToBinaries\\libvad.dll"
     ).getOrThrow()
 
-    singleWindowApplication(state = WindowState(width = 512.dp, height = 512.dp)) {
+    singleWindowApplication(state = WindowState(width = 512.dp, height = 512.dp), title = APP_NAME) {
         val deviceService = remember { DeviceService.create().getOrThrow() }
 
-        val vad = remember { VoiceActivityDetection.create().getOrThrow() }
+        val fvad = remember { VoiceActivityDetection.Fvad.create().getOrThrow() }
+
+        val silero = remember { VoiceActivityDetection.Silero.create().getOrThrow() }
 
         val capturingService = remember { CapturingService.create().getOrThrow() }
 
@@ -45,7 +49,8 @@ fun main() {
         DisposableEffect(Unit) {
             onDispose {
                 playbackService.close()
-                vad.close()
+                fvad.close()
+                silero.close()
             }
         }
 
@@ -53,7 +58,8 @@ fun main() {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                 InteractionScreen(
                     deviceService = deviceService,
-                    vad = vad,
+                    fvad = fvad,
+                    silero = silero,
                     capturingService = capturingService,
                     playbackService = playbackService,
                     handleThrowable = setThrowable

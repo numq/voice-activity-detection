@@ -1,16 +1,16 @@
-package picker
+package selector
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.github.numq.vad.VoiceActivityDetectionMode
+import com.github.numq.vad.fvad.VoiceActivityDetectionMode
 
 @Composable
-fun ModePicker(
+fun ModeSelector(
     modifier: Modifier,
-    currentMode: VoiceActivityDetectionMode,
-    changeCurrentMode: (VoiceActivityDetectionMode) -> Unit,
+    selectedMode: VoiceActivityDetectionMode,
+    selectMode: (VoiceActivityDetectionMode) -> Unit,
 ) {
-    Picker(
+    Selector(
         modifier = modifier,
         items = VoiceActivityDetectionMode.entries.map { mode ->
             when (mode) {
@@ -23,7 +23,7 @@ fun ModePicker(
                 VoiceActivityDetectionMode.VERY_AGGRESSIVE -> "Very aggressive"
             }
         },
-        selectedIndex = VoiceActivityDetectionMode.entries.indexOf(currentMode),
-        onItemSelected = { index -> changeCurrentMode(VoiceActivityDetectionMode.entries.elementAt(index)) }
+        selectedIndex = VoiceActivityDetectionMode.entries.indexOf(selectedMode),
+        selectIndex = { index -> selectMode(VoiceActivityDetectionMode.entries.elementAt(index)) }
     )
 }

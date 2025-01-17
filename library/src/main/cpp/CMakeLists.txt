@@ -3,7 +3,7 @@ project(vad VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_library(vad SHARED src/Java_com_github_numq_vad_NativeVoiceActivityDetection.cpp)
+add_library(vad SHARED src/Java_com_github_numq_vad_fvad_NativeVoiceActivityDetection.cpp)
 
 find_package(JNI)
 

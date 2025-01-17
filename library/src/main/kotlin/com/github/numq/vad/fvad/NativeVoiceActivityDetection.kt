@@ -1,4 +1,4 @@
-package com.github.numq.vad
+package com.github.numq.vad.fvad
 
 import java.lang.ref.Cleaner
 

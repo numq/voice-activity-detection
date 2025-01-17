@@ -1,4 +1,4 @@
-#include "Java_com_github_numq_vad_NativeVoiceActivityDetection.h"
+#include "Java_com_github_numq_vad_fvad_NativeVoiceActivityDetection.h"
 
 static jclass exceptionClass;
 static std::shared_mutex mutex;
@@ -34,7 +34,7 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
 }
 
 JNIEXPORT jlong JNICALL
-Java_com_github_numq_vad_NativeVoiceActivityDetection_initNative(JNIEnv *env, jclass thisClass) {
+Java_com_github_numq_vad_fvad_NativeVoiceActivityDetection_initNative(JNIEnv *env, jclass thisClass) {
     std::unique_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -55,7 +55,7 @@ Java_com_github_numq_vad_NativeVoiceActivityDetection_initNative(JNIEnv *env, jc
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_vad_NativeVoiceActivityDetection_setModeNative(JNIEnv *env, jclass thisClass, jlong handle,
+Java_com_github_numq_vad_fvad_NativeVoiceActivityDetection_setModeNative(JNIEnv *env, jclass thisClass, jlong handle,
                                                                     jint mode) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
@@ -73,7 +73,7 @@ Java_com_github_numq_vad_NativeVoiceActivityDetection_setModeNative(JNIEnv *env,
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_vad_NativeVoiceActivityDetection_processNative(JNIEnv *env, jclass thisClass, jlong handle,
+Java_com_github_numq_vad_fvad_NativeVoiceActivityDetection_processNative(JNIEnv *env, jclass thisClass, jlong handle,
                                                                     jbyteArray pcmBytes) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
@@ -107,7 +107,7 @@ Java_com_github_numq_vad_NativeVoiceActivityDetection_processNative(JNIEnv *env,
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_numq_vad_NativeVoiceActivityDetection_resetNative(JNIEnv *env, jclass thisClass, jlong handle) {
+Java_com_github_numq_vad_fvad_NativeVoiceActivityDetection_resetNative(JNIEnv *env, jclass thisClass, jlong handle) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
@@ -123,7 +123,7 @@ Java_com_github_numq_vad_NativeVoiceActivityDetection_resetNative(JNIEnv *env, j
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_numq_vad_NativeVoiceActivityDetection_freeNative(JNIEnv *env, jclass thisClass, jlong handle) {
+Java_com_github_numq_vad_fvad_NativeVoiceActivityDetection_freeNative(JNIEnv *env, jclass thisClass, jlong handle) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {

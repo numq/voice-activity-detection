@@ -1,5 +1,8 @@
 package interaction
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandIn
+import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,13 +25,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
-import picker.ModePicker
 import playback.PlaybackService
+import selector.ModeSelector
+import selector.VadItemSelector
 
 @Composable
 fun InteractionScreen(
     deviceService: DeviceService,
-    vad: VoiceActivityDetection,
+    fvad: VoiceActivityDetection.Fvad,
+    silero: VoiceActivityDetection.Silero,
     capturingService: CapturingService,
     playbackService: PlaybackService,
     handleThrowable: (Throwable) -> Unit,
@@ -39,7 +44,9 @@ fun InteractionScreen(
 
     var capturingJob by remember { mutableStateOf<Job?>(null) }
 
-    var mode by remember { mutableStateOf(vad.mode) }
+    var selectedMode by remember { mutableStateOf(fvad.mode) }
+
+    var selectedVadItem by remember { mutableStateOf(VoiceActivityDetectionItem.FVAD) }
 
     val capturingDevices = remember { mutableStateListOf<Device>() }
 
@@ -47,7 +54,7 @@ fun InteractionScreen(
 
     var refreshRequested by remember { mutableStateOf(true) }
 
-    var isSpeechDetected by remember { mutableStateOf(false) }
+    var isVoiceActivityDetected by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshRequested) {
         deviceJob?.cancel()
@@ -71,32 +78,36 @@ fun InteractionScreen(
         }
     }
 
-    LaunchedEffect(mode, selectedCapturingDevice) {
-        isSpeechDetected = false
+    LaunchedEffect(selectedVadItem, selectedMode, selectedCapturingDevice) {
+        isVoiceActivityDetected = false
 
         capturingJob?.cancel()
         capturingJob = null
 
-        if (vad.mode != mode) {
-            vad.changeMode(mode).onFailure(handleThrowable)
+        if (fvad.mode != selectedMode) {
+            fvad.changeMode(selectedMode).onFailure(handleThrowable)
         }
 
         capturingJob = when (val device = selectedCapturingDevice) {
             null -> return@LaunchedEffect
 
             else -> coroutineScope.launch {
-                val chunkSize = device.sampleRate / 1_000 * device.channels
+                val chunkSize = 4096
 
                 capturingService.capture(device = device, chunkSize = chunkSize).catch {
                     handleThrowable(it)
                 }.collect { pcmBytes ->
-                    isSpeechDetected = vad.detect(
+                    isVoiceActivityDetected = when (selectedVadItem) {
+                        VoiceActivityDetectionItem.FVAD -> fvad
+
+                        VoiceActivityDetectionItem.SILERO -> silero
+                    }.detect(
                         pcmBytes = pcmBytes,
                         sampleRate = device.sampleRate,
                         channels = device.channels
-                    ).onFailure(handleThrowable).getOrNull() == true
+                    ).onFailure(handleThrowable).getOrDefault(false)
 
-                    if (isSpeechDetected) {
+                    if (isVoiceActivityDetected) {
                         playbackService.write(pcmBytes = pcmBytes).onFailure(handleThrowable)
                     } else {
                         playbackService.play().onFailure(handleThrowable)
@@ -112,17 +123,36 @@ fun InteractionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            ModePicker(
+            VadItemSelector(
                 modifier = Modifier.fillMaxWidth(),
-                currentMode = mode
-            ) { changedMode ->
-                vad.changeMode(changedMode).onSuccess {
-                    mode = vad.mode
-                }.onFailure(handleThrowable)
+                selectedVadItem = selectedVadItem
+            ) { vad ->
+                selectedVadItem = vad
+
+                when (selectedVadItem) {
+                    VoiceActivityDetectionItem.FVAD -> fvad
+
+                    VoiceActivityDetectionItem.SILERO -> silero
+                }.reset().onFailure(handleThrowable)
             }
 
-            if (isSpeechDetected) {
-                Text("Speech", color = Color.Green, modifier = Modifier.padding(8.dp))
+            AnimatedVisibility(
+                visible = selectedVadItem == VoiceActivityDetectionItem.FVAD,
+                enter = expandIn(),
+                exit = shrinkOut()
+            ) {
+                ModeSelector(
+                    modifier = Modifier.fillMaxWidth(),
+                    selectedMode = selectedMode
+                ) { mode ->
+                    fvad.changeMode(mode).onSuccess {
+                        selectedMode = fvad.mode
+                    }.onFailure(handleThrowable)
+                }
+            }
+
+            if (isVoiceActivityDetected) {
+                Text("Voice activity detected", color = Color.Green, modifier = Modifier.padding(8.dp))
             } else {
                 Text("Silence", color = Color.Red, modifier = Modifier.padding(8.dp))
             }
