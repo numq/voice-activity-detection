@@ -1,12 +1,13 @@
-# VAD
+# Voice Activity Detection
 
-**V**oice **A**ctivity **D**etection library for JVM based on the C library [fvad](https://github.com/dpirch/libfvad).
+JVM library for voice activity detection written in kotlin based on C library [fvad](https://github.com/dpirch/libfvad)
+and [Silero](https://github.com/snakers4/silero-vad)
 
 ## Features
 
 - Detects voice activity in PCM audio data
 - Supports any sampling rate and number of channels due to resampling and downmixing
-- Supports different detection modes to balance between sensitivity and accuracy
+- Supports different detection modes to balance between sensitivity and accuracy (fvad)
 
 ## Usage
 
@@ -19,14 +20,19 @@
        implementation(file("/path/to/jar"))
    }
    ```
-3. Load binaries
-    ```kotlin
-    VoiceActivityDetection.load(libfvad = "/path/to/libfvad", libvad = "/path/to/libvad")
-    ```
+3. Load binaries if you are going to use fvad
+   ```kotlin
+   VoiceActivityDetection.Fvad.load(libfvad = "/path/to/libfvad", libvad = "/path/to/libvad")
+   ```
 4. Instantiate a library
-    ```kotlin
-    VoiceActivityDetection.create()
-    ```
+    - fvad
+   ```kotlin
+   VoiceActivityDetection.Fvad.create()
+   ```
+    - Silero
+   ```kotlin
+   VoiceActivityDetection.Silero.create()
+   ```
 
 ## Requirements
 
@@ -38,4 +44,5 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Acknowledgments
 
-- [libfvad](https://github.com/dpirch/libfvad)
+- [fvad](https://github.com/dpirch/libfvad)
+- [Silero](https://github.com/snakers4/silero-vad)
