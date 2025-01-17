@@ -1,7 +1,7 @@
 package com.github.numq.vad
 
 import com.github.numq.vad.fvad.FvadVoiceActivityDetection
-import com.github.numq.vad.fvad.NativeVoiceActivityDetection
+import com.github.numq.vad.fvad.NativeFvadVoiceActivityDetection
 import com.github.numq.vad.fvad.VoiceActivityDetectionMode
 import com.github.numq.vad.silero.SileroVoiceActivityDetection
 import com.github.numq.vad.silero.model.SileroOnnxModel
@@ -40,6 +40,10 @@ interface VoiceActivityDetection : AutoCloseable {
         fun changeMode(mode: VoiceActivityDetectionMode): Result<Unit>
 
         companion object {
+            private const val SAMPLE_RATE = 16_000
+
+            private const val CHUNK_DURATION_MILLIS = 10
+
             private var isLoaded = false
 
             /**
@@ -65,14 +69,18 @@ interface VoiceActivityDetection : AutoCloseable {
             fun create(): Result<Fvad> = runCatching {
                 check(isLoaded) { "Native binaries were not loaded" }
 
-                FvadVoiceActivityDetection(nativeVoiceActivityDetection = NativeVoiceActivityDetection())
+                FvadVoiceActivityDetection(
+                    nativeFvadVoiceActivityDetection = NativeFvadVoiceActivityDetection(),
+                    targetSampleRate = SAMPLE_RATE,
+                    chunkDurationMillis = CHUNK_DURATION_MILLIS
+                )
             }
         }
     }
 
     interface Silero : VoiceActivityDetection {
         companion object {
-            private const val SAMPLE_RATE = 8_000
+            private const val SAMPLE_RATE = 16_000
 
             /**
              * Creates a new instance of [VoiceActivityDetection].

@@ -2,7 +2,7 @@ package com.github.numq.vad.fvad
 
 import java.lang.ref.Cleaner
 
-internal class NativeVoiceActivityDetection : AutoCloseable {
+internal class NativeFvadVoiceActivityDetection : AutoCloseable {
     private val nativeHandle = initNative().also { handle ->
         require(handle != -1L) { "Unable to initialize native library" }
     }

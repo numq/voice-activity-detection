@@ -107,14 +107,14 @@ class VoiceActivityDetectionTest {
 
     @Test
     fun `fvad should detect speech`() = runTest {
-        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")?.also { println(it.file) }!!.readBytes()
+        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")!!.readBytes()
 
         assertTrue(fvad.detect(pcmBytes, 48_000, 1).getOrThrow())
     }
 
     @Test
     fun `silero should detect speech`() = runTest {
-        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")?.also { println(it.file) }!!.readBytes()
+        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")!!.readBytes()
 
         assertTrue(silero.detect(pcmBytes, 48_000, 1).getOrThrow())
     }

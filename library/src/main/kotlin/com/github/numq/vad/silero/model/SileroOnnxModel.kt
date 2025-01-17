@@ -17,9 +17,6 @@ internal class SileroOnnxModel(modelPath: String, targetSampleRate: Int) : OnnxM
     private val session by lazy {
         env.createSession(modelPath, OrtSession.SessionOptions().apply {
             setOptimizationLevel(OrtSession.SessionOptions.OptLevel.NO_OPT)
-            setInterOpNumThreads(1)
-            setIntraOpNumThreads(1)
-            addCPU(true)
         })
     }
 
