@@ -1,5 +1,6 @@
 import com.github.numq.vad.VoiceActivityDetection
-import com.github.numq.vad.VoiceActivityDetectionMode
+import com.github.numq.vad.fvad.VoiceActivityDetectionMode
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -15,7 +16,9 @@ import kotlin.time.measureTime
 
 class VoiceActivityDetectionTest {
     companion object {
-        private val voiceActivityDetection by lazy { VoiceActivityDetection.create().getOrThrow() }
+        private val fvad by lazy { VoiceActivityDetection.Fvad.create().getOrThrow() }
+
+        private val silero by lazy { VoiceActivityDetection.Silero.create().getOrThrow() }
 
         private val durations = arrayOf(
             10.milliseconds,
@@ -37,7 +40,7 @@ class VoiceActivityDetectionTest {
         fun beforeAll() {
             val pathToBinaries = this::class.java.getResource("bin")?.file
 
-            VoiceActivityDetection.load(
+            VoiceActivityDetection.Fvad.load(
                 libfvad = "$pathToBinaries\\libfvad.dll",
                 libvad = "$pathToBinaries\\libvad.dll"
             ).getOrThrow()
@@ -46,13 +49,17 @@ class VoiceActivityDetectionTest {
         @JvmStatic
         @AfterAll
         fun afterAll() {
-            voiceActivityDetection.close()
+            fvad.close()
+            silero.close()
         }
     }
 
     @AfterEach
     fun afterEach() {
-        voiceActivityDetection.reset()
+        runBlocking {
+            fvad.reset()
+            silero.reset()
+        }
     }
 
     private fun generateSilence(sampleRate: Int, channels: Int, duration: Duration): ByteArray {
@@ -61,13 +68,16 @@ class VoiceActivityDetectionTest {
     }
 
     private fun runDetectionTest(
+        voiceActivityDetection: VoiceActivityDetection,
         loadData: (Int, Int, Duration) -> ByteArray,
         assert: (Boolean) -> Unit,
     ) = runTest {
         val measurements = mutableListOf<Duration>()
 
         VoiceActivityDetectionMode.entries.forEach { mode ->
-            voiceActivityDetection.changeMode(mode).getOrThrow()
+            if (voiceActivityDetection is VoiceActivityDetection.Fvad) {
+                voiceActivityDetection.changeMode(mode).getOrThrow()
+            }
 
             durations.forEach { duration ->
                 for (channels in 1..2) {
@@ -86,14 +96,26 @@ class VoiceActivityDetectionTest {
     }
 
     @Test
-    fun `should not detect silence`() = runTest {
-        runDetectionTest(loadData = ::generateSilence, assert = { assertFalse(it) })
+    fun `fvad should not detect silence`() = runTest {
+        runDetectionTest(voiceActivityDetection = fvad, loadData = ::generateSilence, assert = { assertFalse(it) })
     }
 
     @Test
-    fun `should detect speech`() = runTest {
+    fun `silero should not detect silence`() = runTest {
+        runDetectionTest(voiceActivityDetection = silero, loadData = ::generateSilence, assert = { assertFalse(it) })
+    }
+
+    @Test
+    fun `fvad should detect speech`() = runTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")?.also { println(it.file) }!!.readBytes()
 
-        assertTrue(voiceActivityDetection.detect(pcmBytes, 48_000, 1).getOrThrow())
+        assertTrue(fvad.detect(pcmBytes, 48_000, 1).getOrThrow())
+    }
+
+    @Test
+    fun `silero should detect speech`() = runTest {
+        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")?.also { println(it.file) }!!.readBytes()
+
+        assertTrue(silero.detect(pcmBytes, 48_000, 1).getOrThrow())
     }
 }
