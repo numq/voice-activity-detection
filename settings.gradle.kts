@@ -1,3 +1,3 @@
-rootProject.name = "vad"
+rootProject.name = "voice-activity-detection"
 
 include("library", "example")
