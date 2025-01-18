@@ -8,6 +8,16 @@ void handleException(JNIEnv *env, const std::string &errorMessage) {
     env->ThrowNew(exceptionClass, ("JNI ERROR: " + errorMessage).c_str());
 }
 
+std::shared_ptr<Fvad> getPointer(jlong handle) {
+    std::shared_lock<std::shared_mutex> lock(mutex);
+
+    auto it = pointers.find(handle);
+    if (it == pointers.end()) {
+        throw std::runtime_error("Invalid handle");
+    }
+    return it->second;
+}
+
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     JNIEnv *env;
 
@@ -49,40 +59,32 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_initNative(JNIEnv
 
         return handle;
     } catch (const std::exception &e) {
-        handleException(env, std::string("Exception in initNative method: ") + e.what());
+        handleException(env, e.what());
         return -1;
     }
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_setModeNative(JNIEnv *env, jclass thisClass, jlong handle,
-                                                                    jint mode) {
+Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_setModeNative(JNIEnv *env, jclass thisClass,
+                                                                             jlong handle,
+                                                                             jint mode) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
-        auto it = pointers.find(handle);
-        if (it == pointers.end()) {
-            throw std::runtime_error("Invalid handle");
-        }
-
-        return fvad_set_mode(it->second.get(), mode);
+        return fvad_set_mode(getPointer(handle).get(), mode);
     } catch (const std::exception &e) {
-        handleException(env, std::string("Exception in setModeNative method: ") + e.what());
+        handleException(env, e.what());
         return -1;
     }
 }
 
 JNIEXPORT jint JNICALL
-Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_processNative(JNIEnv *env, jclass thisClass, jlong handle,
-                                                                    jbyteArray pcmBytes) {
+Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_processNative(JNIEnv *env, jclass thisClass,
+                                                                             jlong handle,
+                                                                             jbyteArray pcmBytes) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
-        auto it = pointers.find(handle);
-        if (it == pointers.end()) {
-            throw std::runtime_error("Invalid handle");
-        }
-
         auto length = env->GetArrayLength(pcmBytes);
         if (length == 0) {
             throw std::runtime_error("Array is empty");
@@ -97,28 +99,24 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_processNative(JNI
 
         env->ReleaseByteArrayElements(pcmBytes, byteArray, JNI_ABORT);
 
-        jint result = fvad_process(it->second.get(), pcm, length / sizeof(int16_t));
+        jint result = fvad_process(getPointer(handle).get(), pcm, length / sizeof(int16_t));
 
         return result;
     } catch (const std::exception &e) {
-        handleException(env, std::string("Exception in processNative method: ") + e.what());
+        handleException(env, e.what());
         return -1;
     }
 }
 
 JNIEXPORT void JNICALL
-Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_resetNative(JNIEnv *env, jclass thisClass, jlong handle) {
+Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_resetNative(JNIEnv *env, jclass thisClass,
+                                                                           jlong handle) {
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
-        auto it = pointers.find(handle);
-        if (it == pointers.end()) {
-            throw std::runtime_error("Invalid handle");
-        }
-
-        fvad_reset(it->second.get());
+        fvad_reset(getPointer(handle).get());
     } catch (const std::exception &e) {
-        handleException(env, std::string("Exception in resetNative method: ") + e.what());
+        handleException(env, e.what());
     }
 }
 
@@ -127,13 +125,8 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_freeNative(JNIEnv
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
-        auto it = pointers.find(handle);
-        if (it == pointers.end()) {
-            throw std::runtime_error("Invalid handle");
-        }
-
-        pointers.erase(it);
+        pointers.erase(handle);
     } catch (const std::exception &e) {
-        handleException(env, std::string("Exception in freeNative method: ") + e.what());
+        handleException(env, e.what());
     }
 }

@@ -1,6 +1,5 @@
 import com.github.numq.vad.VoiceActivityDetection
 import com.github.numq.vad.fvad.VoiceActivityDetectionMode
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -56,10 +55,8 @@ class VoiceActivityDetectionTest {
 
     @AfterEach
     fun afterEach() {
-        runBlocking {
-            fvad.reset()
-            silero.reset()
-        }
+        fvad.reset()
+        silero.reset()
     }
 
     private fun generateSilence(sampleRate: Int, channels: Int, duration: Duration): ByteArray {
