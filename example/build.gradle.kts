@@ -18,7 +18,6 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(project(":library"))
-//    implementation("androidx.compose.material3:material3:1.3.1")
     implementation("org.jetbrains.compose.material:material-icons-extended-desktop:1.6.11")
 }
 
