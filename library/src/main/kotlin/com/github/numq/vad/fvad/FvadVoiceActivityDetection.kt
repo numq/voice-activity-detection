@@ -16,6 +16,26 @@ internal class FvadVoiceActivityDetection(
 
     private val chunkSizeBytes = chunkSizeSamples * 2
 
+    private fun splitInput(input: ByteArray): Sequence<ByteArray> {
+        var currentStart = 0
+
+        return generateSequence {
+            val end = minOf(currentStart + chunkSizeBytes, input.size)
+
+            if (currentStart >= input.size) return@generateSequence null
+
+            val chunk = input.copyOfRange(currentStart, end)
+
+            currentStart = if (end == input.size) {
+                end
+            } else {
+                maxOf(0, end - chunkSizeBytes / 2)
+            }
+
+            chunk
+        }
+    }
+
     override var mode = VoiceActivityDetectionMode.QUALITY
 
     override fun changeMode(mode: VoiceActivityDetectionMode) = runCatching {
@@ -34,14 +54,42 @@ internal class FvadVoiceActivityDetection(
         val resampledBytes = AudioProcessing.resample(monoBytes, sampleRate, targetSampleRate)
 
         try {
-            coroutineScope {
+            /*coroutineScope {
                 var isVoiceActivityDetected = false
 
-                val jobs = resampledBytes.asSequence().chunked(chunkSizeBytes).mapIndexed { index, chunk ->
+                val jobs = splitInput(resampledBytes).asSequence().mapIndexed { index, chunk ->
                     async(Dispatchers.Default) {
                         val paddedChunk = ByteArray(chunkSizeBytes)
 
-                        System.arraycopy(chunk.toByteArray(), 0, paddedChunk, 0, chunk.size)
+                        System.arraycopy(chunk, 0, paddedChunk, 0, chunk.size)
+
+                        when (val result = nativeFvadVoiceActivityDetection.process(paddedChunk)) {
+                            -1 -> throw IllegalStateException("Unable to process input at chunk $index")
+
+                            else -> result == 1
+                        }
+                    }
+                }
+
+                jobs.forEach {
+                    when {
+                        isVoiceActivityDetected -> it.cancel()
+
+                        it.await() -> isVoiceActivityDetected = true
+                    }
+                }
+
+                isVoiceActivityDetected
+            }*/
+
+            coroutineScope {
+                var isVoiceActivityDetected = false
+
+                val jobs = splitInput(pcmBytes).mapIndexed { index, chunk ->
+                    async(Dispatchers.Default) {
+                        val paddedChunk = ByteArray(chunkSizeBytes)
+
+                        System.arraycopy(chunk, 0, paddedChunk, 0, chunk.size)
 
                         when (val result = nativeFvadVoiceActivityDetection.process(paddedChunk)) {
                             -1 -> throw IllegalStateException("Unable to process input at chunk $index")

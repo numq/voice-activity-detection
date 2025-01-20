@@ -89,12 +89,17 @@ interface VoiceActivityDetection : AutoCloseable {
              * @return a [Result] containing the created instance if successful.
              */
             fun create(threshold: Float = .5f): Result<Silero> = runCatching {
+                val resourceStream = Companion::class.java.classLoader.getResourceAsStream("model/silero_vad.onnx")
+                    ?: throw IllegalStateException("Model file 'silero_vad.onnx' not found in resources")
+
+                val tempFile = File.createTempFile("silero_vad", ".onnx").apply {
+                    deleteOnExit()
+                    outputStream().use { resourceStream.copyTo(it) }
+                }
+
                 SileroVoiceActivityDetection(
                     model = SileroOnnxModel(
-                        modelPath = File(
-                            Companion::class.java.getResource("../../../../model")?.file,
-                            "silero_vad.onnx"
-                        ).absolutePath,
+                        modelPath = tempFile.absolutePath,
                         targetSampleRate = SAMPLE_RATE
                     ),
                     threshold = threshold.coerceIn(0f, 1f),

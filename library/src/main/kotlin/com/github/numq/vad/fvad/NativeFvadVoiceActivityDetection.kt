@@ -1,5 +1,6 @@
 package com.github.numq.vad.fvad
 
+import com.github.numq.vad.exception.NativeException
 import java.lang.ref.Cleaner
 
 internal class NativeFvadVoiceActivityDetection : AutoCloseable {
@@ -28,11 +29,29 @@ internal class NativeFvadVoiceActivityDetection : AutoCloseable {
         external fun freeNative(handle: Long)
     }
 
-    fun setMode(mode: Int) = setModeNative(handle = nativeHandle, mode = mode)
+    fun setMode(mode: Int): Int {
+        try {
+            return setModeNative(handle = nativeHandle, mode = mode)
+        } catch (e: Exception) {
+            throw NativeException(e)
+        }
+    }
 
-    fun process(pcmBytes: ByteArray) = processNative(handle = nativeHandle, pcmBytes = pcmBytes)
+    fun process(pcmBytes: ByteArray): Int {
+        try {
+            return processNative(handle = nativeHandle, pcmBytes = pcmBytes)
+        } catch (e: Exception) {
+            throw NativeException(e)
+        }
+    }
 
-    fun reset() = resetNative(handle = nativeHandle)
+    fun reset() {
+        try {
+            return resetNative(handle = nativeHandle)
+        } catch (e: Exception) {
+            throw NativeException(e)
+        }
+    }
 
     override fun close() = cleanable.clean()
 }

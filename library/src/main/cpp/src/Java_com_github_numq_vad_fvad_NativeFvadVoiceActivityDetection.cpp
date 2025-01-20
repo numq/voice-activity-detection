@@ -2,20 +2,18 @@
 
 static jclass exceptionClass;
 static std::shared_mutex mutex;
-static std::unordered_map<jlong, std::shared_ptr<Fvad>> pointers;
+static std::unordered_map<jlong, fvad_ptr> pointers;
 
 void handleException(JNIEnv *env, const std::string &errorMessage) {
-    env->ThrowNew(exceptionClass, ("JNI ERROR: " + errorMessage).c_str());
+    env->ThrowNew(exceptionClass, errorMessage.c_str());
 }
 
-std::shared_ptr<Fvad> getPointer(jlong handle) {
-    std::shared_lock<std::shared_mutex> lock(mutex);
-
+Fvad *getPointer(jlong handle) {
     auto it = pointers.find(handle);
     if (it == pointers.end()) {
         throw std::runtime_error("Invalid handle");
     }
-    return it->second;
+    return it->second.get();
 }
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -48,14 +46,16 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_initNative(JNIEnv
     std::unique_lock<std::shared_mutex> lock(mutex);
 
     try {
-        auto fvad = std::shared_ptr<Fvad>(fvad_new(), fvad_free);
+        auto fvad = fvad_new();
         if (!fvad) {
             throw std::runtime_error("Failed to create native instance");
         }
 
-        auto handle = reinterpret_cast<jlong>(fvad.get());
+        fvad_ptr ptr(fvad);
 
-        pointers[handle] = std::move(fvad);
+        auto handle = reinterpret_cast<jlong>(ptr.get());
+
+        pointers[handle] = std::move(ptr);
 
         return handle;
     } catch (const std::exception &e) {
@@ -71,7 +71,9 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_setModeNative(JNI
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
-        return fvad_set_mode(getPointer(handle).get(), mode);
+        auto fvad = getPointer(handle);
+
+        return fvad_set_mode(fvad, mode);
     } catch (const std::exception &e) {
         handleException(env, e.what());
         return -1;
@@ -85,6 +87,8 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_processNative(JNI
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
+        auto fvad = getPointer(handle);
+
         auto length = env->GetArrayLength(pcmBytes);
         if (length == 0) {
             throw std::runtime_error("Array is empty");
@@ -99,7 +103,7 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_processNative(JNI
 
         env->ReleaseByteArrayElements(pcmBytes, byteArray, JNI_ABORT);
 
-        jint result = fvad_process(getPointer(handle).get(), pcm, length / sizeof(int16_t));
+        jint result = fvad_process(fvad, pcm, length / sizeof(int16_t));
 
         return result;
     } catch (const std::exception &e) {
@@ -114,7 +118,9 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_resetNative(JNIEn
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
-        fvad_reset(getPointer(handle).get());
+        auto fvad = getPointer(handle);
+
+        fvad_reset(fvad);
     } catch (const std::exception &e) {
         handleException(env, e.what());
     }
@@ -125,7 +131,9 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_freeNative(JNIEnv
     std::shared_lock<std::shared_mutex> lock(mutex);
 
     try {
-        pointers.erase(handle);
+        if (pointers.erase(handle) == 0) {
+            handleException(env, "Unable to free native pointer");
+        }
     } catch (const std::exception &e) {
         handleException(env, e.what());
     }

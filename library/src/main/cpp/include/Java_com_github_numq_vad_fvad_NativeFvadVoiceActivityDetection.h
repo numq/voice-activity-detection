@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <memory>
 #include "fvad.h"
+#include "deleter.h"
 
 #ifndef _Included_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection
 #define _Included_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection

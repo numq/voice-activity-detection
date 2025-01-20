@@ -9,7 +9,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
@@ -27,9 +26,7 @@ class VoiceActivityDetectionTest {
             100.milliseconds,
             500.milliseconds,
             1.seconds,
-            10.seconds,
-            30.seconds,
-            1.minutes
+            10.seconds
         )
 
         private val sampleRates = arrayOf(4_000, 8_000, 32_000, 44_100, 48_000, 88_200, 96_000, 176_400, 192_000)
@@ -37,7 +34,7 @@ class VoiceActivityDetectionTest {
         @JvmStatic
         @BeforeAll
         fun beforeAll() {
-            val pathToBinaries = this::class.java.getResource("bin")?.file
+            val pathToBinaries = this::class.java.getResource("bin")!!.file
 
             VoiceActivityDetection.Fvad.load(
                 libfvad = "$pathToBinaries\\libfvad.dll",

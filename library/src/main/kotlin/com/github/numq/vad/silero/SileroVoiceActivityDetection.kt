@@ -14,22 +14,43 @@ internal class SileroVoiceActivityDetection(
     private val targetSampleRate: Int,
 ) : VoiceActivityDetection.Silero {
     private companion object {
-        const val CHUNK_SIZE = 256
+        const val CHUNK_SIZE = 512
+        const val OVERLAP_SIZE = 256
     }
 
-    private fun splitInput(floatSamples: FloatArray): Array<FloatArray> {
-        val totalChunks = (floatSamples.size + CHUNK_SIZE - 1) / CHUNK_SIZE
-        val result = Array(totalChunks) { FloatArray(CHUNK_SIZE) }
+//    private fun splitInput(floatSamples: FloatArray): Array<FloatArray> {
+//        val totalChunks = ((floatSamples.size - OVERLAP_SIZE) + CHUNK_SIZE - 1) / (CHUNK_SIZE - OVERLAP_SIZE)
+//        val result = Array(totalChunks) { FloatArray(CHUNK_SIZE) }
+//
+//        for (i in 0 until totalChunks) {
+//            val start = i * (CHUNK_SIZE - OVERLAP_SIZE)
+//            val end = minOf(start + CHUNK_SIZE, floatSamples.size)
+//            for (j in start until end) {
+//                result[i][j - start] = floatSamples[j]
+//            }
+//        }
+//
+//        return result
+//    }
 
-        for (i in 0 until totalChunks) {
-            val start = i * CHUNK_SIZE
-            val end = minOf(start + CHUNK_SIZE, floatSamples.size)
-            for (j in start until end) {
-                result[i][j - start] = floatSamples[j]
+    private fun splitInput(input: FloatArray): Sequence<FloatArray> {
+        var currentStart = 0
+
+        return generateSequence {
+            val end = minOf(currentStart + CHUNK_SIZE, input.size)
+
+            if (currentStart >= input.size) return@generateSequence null
+
+            val chunk = input.copyOfRange(currentStart, end)
+
+            currentStart = if (end == input.size) {
+                end
+            } else {
+                maxOf(0, end - CHUNK_SIZE / 2)
             }
-        }
 
-        return result
+            chunk
+        }
     }
 
     override suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int) = runCatching {
