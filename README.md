@@ -1,7 +1,8 @@
 # Voice Activity Detection
 
-JVM library for voice activity detection written in Kotlin based on C library [fvad](https://github.com/dpirch/libfvad)
-and [Silero](https://github.com/snakers4/silero-vad)
+JVM library for voice activity detection written in Kotlin based on the C
+library [libfvad](https://github.com/dpirch/libfvad) and based on the ML
+model [Silero](https://github.com/snakers4/silero-vad)
 
 ## Features
 
@@ -9,27 +10,52 @@ and [Silero](https://github.com/snakers4/silero-vad)
 - Supports any sampling rate and number of channels due to resampling and downmixing
 - Supports different detection modes to balance between sensitivity and accuracy (fvad)
 
+## Installation
+
+- Download latest [release](https://github.com/numq/vad/releases)
+
+- Add library dependency
+   ```kotlin
+   dependencies {
+        implementation(file("/path/to/jar"))
+   }
+   ```
+
+### libfvad
+
+- Unzip binaries
+
+### Silero
+
+- Add ONNX dependency
+   ```kotlin
+   dependencies {
+        implementation("com.microsoft.onnxruntime:onnxruntime:1.20.0")
+   }
+   ```
+
 ## Usage
 
 > See the [example](example) module for implementation details
 
-1. Download latest [release](https://github.com/numq/vad/releases)
-2. Add library dependency
-   ```kotlin
-   dependencies {
-       implementation(file("/path/to/jar"))
-   }
-   ```
-3. Load binaries if you are going to use fvad
+> [!IMPORTANT]
+> If speech is not recognized, the reason may be that the input data size is too small
+
+### fvad
+
+- Load binaries if you are going to use fvad
    ```kotlin
    VoiceActivityDetection.Fvad.load(libfvad = "/path/to/libfvad", libvad = "/path/to/libvad")
    ```
-4. Instantiate a library
-    - fvad
+
+- Instantiate a library
    ```kotlin
    VoiceActivityDetection.Fvad.create()
    ```
-    - Silero
+
+### Silero
+
+- Instantiate a library
    ```kotlin
    VoiceActivityDetection.Silero.create()
    ```
@@ -44,5 +70,5 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Acknowledgments
 
-- [fvad](https://github.com/dpirch/libfvad)
+- [libfvad](https://github.com/dpirch/libfvad)
 - [Silero](https://github.com/snakers4/silero-vad)
