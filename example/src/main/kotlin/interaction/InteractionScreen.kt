@@ -46,7 +46,7 @@ fun InteractionScreen(
 
     var selectedMode by remember { mutableStateOf(fvad.mode) }
 
-    var selectedVadItem by remember { mutableStateOf(VoiceActivityDetectionItem.FVAD) }
+    var selectedVadItem by remember { mutableStateOf(VadItem.FVAD) }
 
     val capturingDevices = remember { mutableStateListOf<Device>() }
 
@@ -98,9 +98,9 @@ fun InteractionScreen(
                     handleThrowable(it)
                 }.collect { pcmBytes ->
                     isVoiceActivityDetected = when (selectedVadItem) {
-                        VoiceActivityDetectionItem.FVAD -> fvad
+                        VadItem.FVAD -> fvad
 
-                        VoiceActivityDetectionItem.SILERO -> silero
+                        VadItem.SILERO -> silero
                     }.detect(
                         pcmBytes = pcmBytes,
                         sampleRate = device.sampleRate,
@@ -130,14 +130,14 @@ fun InteractionScreen(
                 selectedVadItem = vad
 
                 when (selectedVadItem) {
-                    VoiceActivityDetectionItem.FVAD -> fvad
+                    VadItem.FVAD -> fvad
 
-                    VoiceActivityDetectionItem.SILERO -> silero
+                    VadItem.SILERO -> silero
                 }.reset().onFailure(handleThrowable)
             }
 
             AnimatedVisibility(
-                visible = selectedVadItem == VoiceActivityDetectionItem.FVAD,
+                visible = selectedVadItem == VadItem.FVAD,
                 enter = expandIn(),
                 exit = shrinkOut()
             ) {

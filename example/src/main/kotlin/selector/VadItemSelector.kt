@@ -2,18 +2,18 @@ package selector
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import interaction.VoiceActivityDetectionItem
+import interaction.VadItem
 
 @Composable
 fun VadItemSelector(
     modifier: Modifier,
-    selectedVadItem: VoiceActivityDetectionItem,
-    selectVadItem: (VoiceActivityDetectionItem) -> Unit,
+    selectedVadItem: VadItem,
+    selectVadItem: (VadItem) -> Unit,
 ) {
     Selector(
         modifier = modifier,
-        items = VoiceActivityDetectionItem.entries.map(VoiceActivityDetectionItem::visibleName),
-        selectedIndex = VoiceActivityDetectionItem.entries.indexOf(selectedVadItem),
-        selectIndex = { index -> selectVadItem(VoiceActivityDetectionItem.entries.elementAt(index)) }
+        items = VadItem.entries.map(VadItem::visibleName),
+        selectedIndex = VadItem.entries.indexOf(selectedVadItem),
+        selectIndex = { index -> selectVadItem(VadItem.entries.elementAt(index)) }
     )
 }
