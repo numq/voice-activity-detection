@@ -12,7 +12,7 @@ fun VadItemSelector(
 ) {
     Selector(
         modifier = modifier,
-        items = VadItem.entries.map(VadItem::visibleName),
+        items = VadItem.entries.map(VadItem::name),
         selectedIndex = VadItem.entries.indexOf(selectedVadItem),
         selectIndex = { index -> selectVadItem(VadItem.entries.elementAt(index)) }
     )
