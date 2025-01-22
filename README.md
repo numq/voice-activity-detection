@@ -38,27 +38,32 @@ model [Silero](https://github.com/snakers4/silero-vad)
 
 > See the [example](example) module for implementation details
 
-> [!IMPORTANT]
-> If speech is not recognized, the reason may be that the input data size is too small
-
-### fvad
-
 - Load binaries if you are going to use fvad
    ```kotlin
    VoiceActivityDetection.Fvad.load(libfvad = "/path/to/libfvad", libvad = "/path/to/libvad")
    ```
 
-- Instantiate a library
-   ```kotlin
-   VoiceActivityDetection.Fvad.create()
-   ```
+- Create an instance
 
-### Silero
+  ### fvad
 
-- Instantiate a library
-   ```kotlin
-   VoiceActivityDetection.Silero.create()
-   ```
+  ```kotlin
+  VoiceActivityDetection.Fvad.create()
+  ```
+
+  ### Silero
+
+  ```kotlin
+  VoiceActivityDetection.Silero.create()
+  ```
+
+- Call `detect` passing the input data, sample rate, and number of channels as arguments
+
+
+- Call `reset` to reset the internal state - for example when the audio source changes
+
+
+- Call `close` to release resources
 
 ## Requirements
 
