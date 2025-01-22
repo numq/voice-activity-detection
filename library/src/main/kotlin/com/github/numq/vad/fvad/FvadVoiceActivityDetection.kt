@@ -2,6 +2,7 @@ package com.github.numq.vad.fvad
 
 import com.github.numq.vad.VoiceActivityDetection
 import com.github.numq.vad.audio.AudioProcessing
+import com.github.numq.vad.audio.AudioProcessing.calculateChunkSize
 import com.github.numq.vad.audio.AudioProcessing.splitIntoChunks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -16,7 +17,7 @@ internal class FvadVoiceActivityDetection(
     }
 
     override fun minimumInputSize(sampleRate: Int, channels: Int) =
-        ((sampleRate * MINIMUM_CHUNK_MILLIS) / 1000 * 2 + 3) and -4
+        calculateChunkSize(sampleRate = sampleRate, channels = channels, millis = MINIMUM_CHUNK_MILLIS)
 
     override var mode = VoiceActivityDetectionMode.QUALITY
 
@@ -39,16 +40,13 @@ internal class FvadVoiceActivityDetection(
             coroutineScope {
                 var isVoiceActivityDetected = false
 
-                val millis = when (resampledBytes.size / 2) {
-                    in 1..10 -> 10
-
-                    else -> 20
-                }
-
                 val jobs = splitIntoChunks(
-                    pcmBytes = resampledBytes,
-                    sampleRate = VoiceActivityDetection.SAMPLE_RATE,
-                    millis = millis
+                    inputData = resampledBytes,
+                    chunkSize = calculateChunkSize(
+                        sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+                        channels = VoiceActivityDetection.CHANNELS,
+                        millis = MINIMUM_CHUNK_MILLIS
+                    )
                 ).mapIndexed { index, chunk ->
                     async(Dispatchers.Default) {
                         when (val result = nativeFvadVoiceActivityDetection.process(chunk)) {

@@ -10,6 +10,7 @@ import java.io.File
 interface VoiceActivityDetection : AutoCloseable {
     companion object {
         const val SAMPLE_RATE = 8_000
+        const val CHANNELS = 1
     }
 
     /**

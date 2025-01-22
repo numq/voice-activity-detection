@@ -2,6 +2,7 @@ package com.github.numq.vad.silero
 
 import com.github.numq.vad.VoiceActivityDetection
 import com.github.numq.vad.audio.AudioProcessing
+import com.github.numq.vad.audio.AudioProcessing.calculateChunkSize
 import com.github.numq.vad.audio.AudioProcessing.splitIntoChunks
 import com.github.numq.vad.silero.model.OnnxModel
 import kotlinx.coroutines.Dispatchers
@@ -14,11 +15,11 @@ internal class SileroVoiceActivityDetection(
     private val threshold: Float,
 ) : VoiceActivityDetection.Silero {
     private companion object {
-        const val MINIMUM_CHUNK_MILLIS = 35
+        const val MINIMUM_CHUNK_MILLIS = 32
     }
 
     override fun minimumInputSize(sampleRate: Int, channels: Int) =
-        ((sampleRate * MINIMUM_CHUNK_MILLIS) / 1000 * 2 + 3) and -4
+        calculateChunkSize(sampleRate = sampleRate, channels = channels, millis = MINIMUM_CHUNK_MILLIS)
 
     override suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int) = runCatching {
         val monoBytes = AudioProcessing.downmixToMono(pcmBytes, channels)
@@ -32,9 +33,12 @@ internal class SileroVoiceActivityDetection(
                 var isVoiceActivityDetected = false
 
                 val jobs = splitIntoChunks(
-                    pcmBytes = resampledBytes,
-                    sampleRate = VoiceActivityDetection.SAMPLE_RATE,
-                    millis = MINIMUM_CHUNK_MILLIS
+                    inputData = resampledBytes,
+                    chunkSize = calculateChunkSize(
+                        sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+                        channels = VoiceActivityDetection.CHANNELS,
+                        millis = MINIMUM_CHUNK_MILLIS
+                    )
                 ).map { chunk ->
                     val floatSamples = FloatArray(chunk.size / 2) { i ->
                         ((chunk[i * 2].toInt() and 0xFF) or (chunk[i * 2 + 1].toInt() shl 8)) / 32767f

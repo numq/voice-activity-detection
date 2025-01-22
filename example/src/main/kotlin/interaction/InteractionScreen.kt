@@ -21,10 +21,8 @@ import capturing.CapturingService
 import com.github.numq.vad.VoiceActivityDetection
 import device.Device
 import device.DeviceService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
 import playback.PlaybackService
 import selector.ModeSelector
 import selector.VadItemSelector
@@ -81,7 +79,7 @@ fun InteractionScreen(
     LaunchedEffect(selectedVadItem, selectedMode, selectedCapturingDevice) {
         isVoiceActivityDetected = false
 
-        capturingJob?.cancel()
+        capturingJob?.cancelAndJoin()
         capturingJob = null
 
         if (fvad.mode != selectedMode) {
@@ -93,6 +91,7 @@ fun InteractionScreen(
 
             else -> coroutineScope.launch {
                 val sampleRate = device.sampleRate
+
                 val channels = device.channels
 
                 val chunkSize = when (selectedVadItem) {
@@ -111,7 +110,9 @@ fun InteractionScreen(
                     device = device,
                     chunkSize = chunkSize
                 ).catch {
-                    handleThrowable(it)
+                    if (it != CancellationException()) {
+                        handleThrowable(it)
+                    }
                 }.collect { pcmBytes ->
                     isVoiceActivityDetected = when (selectedVadItem) {
                         VadItem.FVAD -> fvad
@@ -124,9 +125,9 @@ fun InteractionScreen(
                     ).onFailure(handleThrowable).getOrDefault(false)
 
                     if (isVoiceActivityDetected) {
-                        playbackService.write(pcmBytes = pcmBytes).onFailure(handleThrowable)
+                        playbackService.write(pcmBytes = pcmBytes).getOrThrow()
                     } else {
-                        playbackService.play().onFailure(handleThrowable)
+                        playbackService.play().getOrThrow()
 
                         when (selectedVadItem) {
                             VadItem.FVAD -> fvad

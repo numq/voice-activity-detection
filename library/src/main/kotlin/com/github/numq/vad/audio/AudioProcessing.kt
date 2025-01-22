@@ -3,16 +3,18 @@ package com.github.numq.vad.audio
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-object AudioProcessing {
-    fun downmixToMono(pcmBytes: ByteArray, channels: Int): ByteArray {
-        if (channels == 1) return pcmBytes
+internal object AudioProcessing {
+    fun downmixToMono(inputData: ByteArray, channels: Int): ByteArray {
+        require(inputData.isNotEmpty()) { "Input data must not be empty" }
+
+        if (channels == 1) return inputData
 
         require(channels > 0) { "Number of channels must be greater than 0" }
 
-        require(pcmBytes.size % (channels * 2) == 0) { "PCM byte size must be a multiple of the frame size (channels * 2)" }
+        require(inputData.size % (channels * 2) == 0) { "PCM byte size must be a multiple of the frame size (channels * 2)" }
 
-        val monoBytes = ByteArray(pcmBytes.size / channels)
-        val inputBuffer = ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN)
+        val monoBytes = ByteArray(inputData.size / channels)
+        val inputBuffer = ByteBuffer.wrap(inputData).order(ByteOrder.LITTLE_ENDIAN)
         val outputBuffer = ByteBuffer.wrap(monoBytes).order(ByteOrder.LITTLE_ENDIAN)
 
         val shortMin = Short.MIN_VALUE.toLong()
@@ -31,15 +33,15 @@ object AudioProcessing {
     }
 
     fun resample(inputData: ByteArray, inputSampleRate: Int, outputSampleRate: Int): ByteArray {
+        require(inputData.isNotEmpty()) { "Input data must not be empty" }
+
         require(inputSampleRate > 0) { "Input sample rate must be greater than 0" }
 
-        require(inputData.isNotEmpty()) { "Input data must not be empty" }
+        require(outputSampleRate > 0) { "Output sample rate must be greater than 0" }
 
         val inputBuffer = ByteBuffer.wrap(inputData).order(ByteOrder.LITTLE_ENDIAN)
         val inputSampleCount = inputData.size / 2
         val outputSampleCount = ((inputSampleCount.toLong() * outputSampleRate) / inputSampleRate.toDouble()).toInt()
-
-        require(outputSampleCount >= 0) { "Output sample count must not be negative" }
 
         val outputData = ByteArray(outputSampleCount * 2)
         val outputBuffer = ByteBuffer.wrap(outputData).order(ByteOrder.LITTLE_ENDIAN)
@@ -64,22 +66,32 @@ object AudioProcessing {
         return outputData
     }
 
-    fun splitIntoChunks(pcmBytes: ByteArray, sampleRate: Int, millis: Int): Sequence<ByteArray> {
-        val chunkSize = if (millis == 1_000) sampleRate * 2 else sampleRate / 1_000 * millis * 2
+    fun calculateChunkSize(sampleRate: Int, channels: Int, millis: Int): Int {
+        require(sampleRate > 0) { "Sample rate must be greater than 0" }
+
+        require(channels > 0) { "Number of channels must be greater than 0" }
+
+        return (((sampleRate * millis) / 1000) * 2 * channels + 3) and -4
+    }
+
+    fun splitIntoChunks(inputData: ByteArray, chunkSize: Int): Sequence<ByteArray> {
+        require(inputData.isNotEmpty()) { "Input data must not be empty" }
+
+        require(chunkSize > 0) { "Chunk size must be greater than zero" }
 
         var currentStart = 0
 
         return generateSequence {
-            val end = minOf(currentStart + chunkSize, pcmBytes.size)
+            val end = minOf(currentStart + chunkSize, inputData.size)
 
-            if (currentStart >= pcmBytes.size) return@generateSequence null
+            if (currentStart >= inputData.size) return@generateSequence null
 
             val chunk = ByteArray(chunkSize)
-            val actualChunk = pcmBytes.copyOfRange(currentStart, end)
+            val actualChunk = inputData.copyOfRange(currentStart, end)
 
             System.arraycopy(actualChunk, 0, chunk, 0, actualChunk.size)
 
-            currentStart = if (end == pcmBytes.size) {
+            currentStart = if (end == inputData.size) {
                 end
             } else {
                 maxOf(0, end - chunkSize / 2)
