@@ -8,8 +8,24 @@ import com.github.numq.vad.silero.model.SileroOnnxModel
 import java.io.File
 
 interface VoiceActivityDetection : AutoCloseable {
+    companion object {
+        const val SAMPLE_RATE = 8_000
+    }
+
+    /**
+     * Returns the minimum effective chunk size - the size at which there is no need to fill the input data with silence.
+     *
+     * @param sampleRate the sampling rate of the audio data in Hz.
+     * @param channels the number of audio channels.
+     * @return the minimum chunk size in bytes.
+     */
+    fun minimumInputSize(sampleRate: Int, channels: Int): Int
+
     /**
      * Detects voice activity in the given PCM audio data.
+     * The input data is split into chunks and padded with silence if needed.
+     *
+     * To maximize efficiency and avoid padding, ensure that the input data size is equal to [minimumInputSize].
      *
      * @param pcmBytes the audio data in PCM format.
      * @param sampleRate the sampling rate of the audio data in Hz.
@@ -40,10 +56,6 @@ interface VoiceActivityDetection : AutoCloseable {
         fun changeMode(mode: VoiceActivityDetectionMode): Result<Unit>
 
         companion object {
-            private const val SAMPLE_RATE = 16_000
-
-            private const val CHUNK_DURATION_MILLIS = 10
-
             private var isLoaded = false
 
             /**
@@ -69,19 +81,13 @@ interface VoiceActivityDetection : AutoCloseable {
             fun create(): Result<Fvad> = runCatching {
                 check(isLoaded) { "Native binaries were not loaded" }
 
-                FvadVoiceActivityDetection(
-                    nativeFvadVoiceActivityDetection = NativeFvadVoiceActivityDetection(),
-                    targetSampleRate = SAMPLE_RATE,
-                    chunkDurationMillis = CHUNK_DURATION_MILLIS
-                )
+                FvadVoiceActivityDetection(nativeFvadVoiceActivityDetection = NativeFvadVoiceActivityDetection())
             }
         }
     }
 
     interface Silero : VoiceActivityDetection {
         companion object {
-            private const val SAMPLE_RATE = 16_000
-
             /**
              * Creates a new instance of [VoiceActivityDetection].
              *
@@ -102,8 +108,7 @@ interface VoiceActivityDetection : AutoCloseable {
                         modelPath = tempFile.absolutePath,
                         targetSampleRate = SAMPLE_RATE
                     ),
-                    threshold = threshold.coerceIn(0f, 1f),
-                    targetSampleRate = SAMPLE_RATE
+                    threshold = threshold.coerceIn(0f, 1f)
                 )
             }
         }

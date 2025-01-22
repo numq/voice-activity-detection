@@ -2,6 +2,7 @@ package com.github.numq.vad.fvad
 
 import com.github.numq.vad.VoiceActivityDetection
 import com.github.numq.vad.audio.AudioProcessing
+import com.github.numq.vad.audio.AudioProcessing.splitIntoChunks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -9,32 +10,13 @@ import kotlin.coroutines.cancellation.CancellationException
 
 internal class FvadVoiceActivityDetection(
     private val nativeFvadVoiceActivityDetection: NativeFvadVoiceActivityDetection,
-    private val targetSampleRate: Int,
-    chunkDurationMillis: Int,
 ) : VoiceActivityDetection.Fvad {
-    private val chunkSizeSamples = targetSampleRate / 1_000 * chunkDurationMillis
-
-    private val chunkSizeBytes = chunkSizeSamples * 2
-
-    private fun splitInput(input: ByteArray): Sequence<ByteArray> {
-        var currentStart = 0
-
-        return generateSequence {
-            val end = minOf(currentStart + chunkSizeBytes, input.size)
-
-            if (currentStart >= input.size) return@generateSequence null
-
-            val chunk = input.copyOfRange(currentStart, end)
-
-            currentStart = if (end == input.size) {
-                end
-            } else {
-                maxOf(0, end - chunkSizeBytes / 2)
-            }
-
-            chunk
-        }
+    private companion object {
+        const val MINIMUM_CHUNK_MILLIS = 10
     }
+
+    override fun minimumInputSize(sampleRate: Int, channels: Int) =
+        ((sampleRate * MINIMUM_CHUNK_MILLIS) / 1000 * 2 + 3) and -4
 
     override var mode = VoiceActivityDetectionMode.QUALITY
 
@@ -51,47 +33,25 @@ internal class FvadVoiceActivityDetection(
 
         val monoBytes = AudioProcessing.downmixToMono(pcmBytes, channels)
 
-        val resampledBytes = AudioProcessing.resample(monoBytes, sampleRate, targetSampleRate)
+        val resampledBytes = AudioProcessing.resample(monoBytes, sampleRate, VoiceActivityDetection.SAMPLE_RATE)
 
         try {
-            /*coroutineScope {
-                var isVoiceActivityDetected = false
-
-                val jobs = splitInput(resampledBytes).asSequence().mapIndexed { index, chunk ->
-                    async(Dispatchers.Default) {
-                        val paddedChunk = ByteArray(chunkSizeBytes)
-
-                        System.arraycopy(chunk, 0, paddedChunk, 0, chunk.size)
-
-                        when (val result = nativeFvadVoiceActivityDetection.process(paddedChunk)) {
-                            -1 -> throw IllegalStateException("Unable to process input at chunk $index")
-
-                            else -> result == 1
-                        }
-                    }
-                }
-
-                jobs.forEach {
-                    when {
-                        isVoiceActivityDetected -> it.cancel()
-
-                        it.await() -> isVoiceActivityDetected = true
-                    }
-                }
-
-                isVoiceActivityDetected
-            }*/
-
             coroutineScope {
                 var isVoiceActivityDetected = false
 
-                val jobs = splitInput(pcmBytes).mapIndexed { index, chunk ->
+                val millis = when (resampledBytes.size / 2) {
+                    in 1..10 -> 10
+
+                    else -> 20
+                }
+
+                val jobs = splitIntoChunks(
+                    pcmBytes = resampledBytes,
+                    sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+                    millis = millis
+                ).mapIndexed { index, chunk ->
                     async(Dispatchers.Default) {
-                        val paddedChunk = ByteArray(chunkSizeBytes)
-
-                        System.arraycopy(chunk, 0, paddedChunk, 0, chunk.size)
-
-                        when (val result = nativeFvadVoiceActivityDetection.process(paddedChunk)) {
+                        when (val result = nativeFvadVoiceActivityDetection.process(chunk)) {
                             -1 -> throw IllegalStateException("Unable to process input at chunk $index")
 
                             else -> result == 1

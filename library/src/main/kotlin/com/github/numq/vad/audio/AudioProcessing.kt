@@ -63,4 +63,29 @@ object AudioProcessing {
 
         return outputData
     }
+
+    fun splitIntoChunks(pcmBytes: ByteArray, sampleRate: Int, millis: Int): Sequence<ByteArray> {
+        val chunkSize = if (millis == 1_000) sampleRate * 2 else sampleRate / 1_000 * millis * 2
+
+        var currentStart = 0
+
+        return generateSequence {
+            val end = minOf(currentStart + chunkSize, pcmBytes.size)
+
+            if (currentStart >= pcmBytes.size) return@generateSequence null
+
+            val chunk = ByteArray(chunkSize)
+            val actualChunk = pcmBytes.copyOfRange(currentStart, end)
+
+            System.arraycopy(actualChunk, 0, chunk, 0, actualChunk.size)
+
+            currentStart = if (end == pcmBytes.size) {
+                end
+            } else {
+                maxOf(0, end - chunkSize / 2)
+            }
+
+            chunk
+        }
+    }
 }

@@ -92,9 +92,25 @@ fun InteractionScreen(
             null -> return@LaunchedEffect
 
             else -> coroutineScope.launch {
-                val chunkSize = 4096
+                val sampleRate = device.sampleRate
+                val channels = device.channels
 
-                capturingService.capture(device = device, chunkSize = chunkSize).catch {
+                val chunkSize = when (selectedVadItem) {
+                    VadItem.FVAD -> fvad.minimumInputSize(
+                        sampleRate = sampleRate,
+                        channels = channels
+                    )
+
+                    VadItem.SILERO -> silero.minimumInputSize(
+                        sampleRate = sampleRate,
+                        channels = channels
+                    )
+                }
+
+                capturingService.capture(
+                    device = device,
+                    chunkSize = chunkSize
+                ).catch {
                     handleThrowable(it)
                 }.collect { pcmBytes ->
                     isVoiceActivityDetected = when (selectedVadItem) {
@@ -103,14 +119,20 @@ fun InteractionScreen(
                         VadItem.SILERO -> silero
                     }.detect(
                         pcmBytes = pcmBytes,
-                        sampleRate = device.sampleRate,
-                        channels = device.channels
+                        sampleRate = sampleRate,
+                        channels = channels
                     ).onFailure(handleThrowable).getOrDefault(false)
 
                     if (isVoiceActivityDetected) {
                         playbackService.write(pcmBytes = pcmBytes).onFailure(handleThrowable)
                     } else {
                         playbackService.play().onFailure(handleThrowable)
+
+                        when (selectedVadItem) {
+                            VadItem.FVAD -> fvad
+
+                            VadItem.SILERO -> silero
+                        }.reset()
                     }
                 }
             }

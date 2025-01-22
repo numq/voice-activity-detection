@@ -1,22 +1,20 @@
 import com.github.numq.vad.VoiceActivityDetection
 import com.github.numq.vad.fvad.VoiceActivityDetectionMode
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
 class VoiceActivityDetectionTest {
     companion object {
-        private val fvad by lazy { VoiceActivityDetection.Fvad.create().getOrThrow() }
+        private lateinit var fvad: VoiceActivityDetection.Fvad
 
-        private val silero by lazy { VoiceActivityDetection.Silero.create().getOrThrow() }
+        private lateinit var silero: VoiceActivityDetection.Silero
 
         private val durations = arrayOf(
             10.milliseconds,
@@ -31,6 +29,8 @@ class VoiceActivityDetectionTest {
 
         private val sampleRates = arrayOf(4_000, 8_000, 32_000, 44_100, 48_000, 88_200, 96_000, 176_400, 192_000)
 
+        private val chunksSizes = arrayOf(128, 256, 512, 1024, 2048, 4096, 8192)
+
         @JvmStatic
         @BeforeAll
         fun beforeAll() {
@@ -40,6 +40,10 @@ class VoiceActivityDetectionTest {
                 libfvad = "$pathToBinaries\\libfvad.dll",
                 libvad = "$pathToBinaries\\libvad.dll"
             ).getOrThrow()
+
+            fvad = VoiceActivityDetection.Fvad.create().getOrThrow()
+
+            silero = VoiceActivityDetection.Silero.create().getOrThrow()
         }
 
         @JvmStatic
@@ -101,15 +105,67 @@ class VoiceActivityDetectionTest {
 
     @Test
     fun `fvad should detect speech`() = runTest {
-        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")!!.readBytes()
-
-        assertTrue(fvad.detect(pcmBytes, 48_000, 1).getOrThrow())
+        val pcmBytes = javaClass.classLoader.getResource("audio/short.wav")!!.readBytes()
+        val sampleRate = 48_000
+        val channels = 1
+        assertTrue(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow())
     }
 
     @Test
     fun `silero should detect speech`() = runTest {
-        val pcmBytes = javaClass.classLoader.getResource("audio/test.wav")!!.readBytes()
+        val pcmBytes = javaClass.classLoader.getResource("audio/short.wav")!!.readBytes()
+        val sampleRate = 48_000
+        val channels = 1
+        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow())
+    }
 
-        assertTrue(silero.detect(pcmBytes, 48_000, 1).getOrThrow())
+    @Test
+    fun `fvad should not detect silence in real-time`() = runTest(timeout = ZERO) {
+        val sampleRate = sampleRates.random()
+        val channels = 2
+        chunksSizes.forEach { chunkSize ->
+            generateSilence(sampleRate, channels, 30.seconds).asSequence().chunked(chunkSize).forEach { pcmBytes ->
+                assertFalse(fvad.detect(pcmBytes.toByteArray(), sampleRate, channels).getOrThrow())
+            }
+        }
+    }
+
+    @Test
+    fun `silero should not detect silence in real-time`() = runTest(timeout = ZERO) {
+        val sampleRate = sampleRates.random()
+        val channels = 2
+        chunksSizes.forEach { chunkSize ->
+            generateSilence(sampleRate, channels, 30.seconds).asSequence().chunked(chunkSize).forEach { pcmBytes ->
+                assertFalse(fvad.detect(pcmBytes.toByteArray(), sampleRate, channels).getOrThrow())
+            }
+        }
+    }
+
+    @Test
+    fun `fvad should detect silence in real-time`() = runTest(timeout = ZERO) {
+        val pcmBytes = javaClass.classLoader.getResource("audio/long.wav")!!.readBytes()
+        val sampleRate = 48_000
+        val channels = 1
+        chunksSizes.forEach { chunkSize ->
+            pcmBytes.asSequence().chunked(chunkSize).forEach { bytes ->
+                assertDoesNotThrow {
+                    fvad.detect(bytes.toByteArray(), sampleRate, channels).getOrThrow()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `silero should detect silence in real-time`() = runTest(timeout = ZERO) {
+        val pcmBytes = javaClass.classLoader.getResource("audio/long.wav")!!.readBytes()
+        val sampleRate = 48_000
+        val channels = 1
+        chunksSizes.forEach { chunkSize ->
+            pcmBytes.asSequence().chunked(chunkSize).forEach { bytes ->
+                assertDoesNotThrow {
+                    fvad.detect(bytes.toByteArray(), sampleRate, channels).getOrThrow()
+                }
+            }
+        }
     }
 }
