@@ -94,14 +94,12 @@ class VoiceActivityDetectionTest {
     }
 
     @Test
-    fun `fvad should not detect silence`() = runTest {
+    fun `fvad should not detect silence`() =
         runDetectionTest(voiceActivityDetection = fvad, loadData = ::generateSilence, assert = { assertFalse(it) })
-    }
 
     @Test
-    fun `silero should not detect silence`() = runTest {
+    fun `silero should not detect silence`() =
         runDetectionTest(voiceActivityDetection = silero, loadData = ::generateSilence, assert = { assertFalse(it) })
-    }
 
     @Test
     fun `fvad should detect speech`() = runTest {
@@ -142,7 +140,7 @@ class VoiceActivityDetectionTest {
     }
 
     @Test
-    fun `fvad should detect silence in real-time`() = runTest(timeout = ZERO) {
+    fun `fvad should detect speech in real-time`() = runTest(timeout = ZERO) {
         val pcmBytes = javaClass.classLoader.getResource("audio/long.wav")!!.readBytes()
         val sampleRate = 48_000
         val channels = 1
@@ -156,7 +154,7 @@ class VoiceActivityDetectionTest {
     }
 
     @Test
-    fun `silero should detect silence in real-time`() = runTest(timeout = ZERO) {
+    fun `silero should detect speech in real-time`() = runTest(timeout = ZERO) {
         val pcmBytes = javaClass.classLoader.getResource("audio/long.wav")!!.readBytes()
         val sampleRate = 48_000
         val channels = 1

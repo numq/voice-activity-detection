@@ -79,25 +79,8 @@ internal object AudioProcessing {
 
         require(chunkSize > 0) { "Chunk size must be greater than zero" }
 
-        var currentStart = 0
-
-        return generateSequence {
-            val end = minOf(currentStart + chunkSize, inputData.size)
-
-            if (currentStart >= inputData.size) return@generateSequence null
-
-            val chunk = ByteArray(chunkSize)
-            val actualChunk = inputData.copyOfRange(currentStart, end)
-
-            System.arraycopy(actualChunk, 0, chunk, 0, actualChunk.size)
-
-            currentStart = if (end == inputData.size) {
-                end
-            } else {
-                maxOf(0, end - chunkSize / 2)
-            }
-
-            chunk
+        return inputData.asSequence().chunked(chunkSize).map { chunk ->
+            chunk.toByteArray().copyOf(chunkSize)
         }
     }
 }
