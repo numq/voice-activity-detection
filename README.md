@@ -27,7 +27,7 @@ voice-controlled systems.
 
 ## Installation
 
-- Download latest [release](https://github.com/numq/vad/releases)
+- Download latest [release](https://github.com/numq/voice-activity-detection/releases)
 
 - Add library dependency
    ```kotlin
