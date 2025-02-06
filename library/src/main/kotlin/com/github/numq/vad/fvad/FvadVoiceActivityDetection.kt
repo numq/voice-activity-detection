@@ -1,13 +1,9 @@
 package com.github.numq.vad.fvad
 
 import com.github.numq.vad.VoiceActivityDetection
-import com.github.numq.vad.audio.AudioProcessing
 import com.github.numq.vad.audio.AudioProcessing.calculateChunkSize
-import com.github.numq.vad.audio.AudioProcessing.splitIntoChunks
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlin.coroutines.cancellation.CancellationException
+import com.github.numq.vad.audio.AudioProcessing.downmixToMono
+import com.github.numq.vad.audio.AudioProcessing.resample
 
 internal class FvadVoiceActivityDetection(
     private val nativeFvadVoiceActivityDetection: NativeFvadVoiceActivityDetection,
@@ -16,8 +12,9 @@ internal class FvadVoiceActivityDetection(
         const val MINIMUM_CHUNK_MILLIS = 10
     }
 
-    override fun minimumInputSize(sampleRate: Int, channels: Int) =
+    override fun minimumInputSize(sampleRate: Int, channels: Int) = runCatching {
         calculateChunkSize(sampleRate = sampleRate, channels = channels, millis = MINIMUM_CHUNK_MILLIS)
+    }
 
     override var mode = VoiceActivityDetectionMode.QUALITY
 
@@ -30,46 +27,33 @@ internal class FvadVoiceActivityDetection(
     override suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int) = runCatching {
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching false
+        if (pcmBytes.isEmpty()) return@runCatching byteArrayOf()
 
-        val monoBytes = AudioProcessing.downmixToMono(pcmBytes, channels)
+        val chunkSize = calculateChunkSize(
+            sampleRate = sampleRate,
+            channels = channels,
+            millis = MINIMUM_CHUNK_MILLIS
+        )
 
-        val resampledBytes = AudioProcessing.resample(monoBytes, sampleRate, VoiceActivityDetection.SAMPLE_RATE)
+        pcmBytes.asSequence().chunked(chunkSize).mapIndexedNotNull { index, chunk ->
+            val monoChunk = downmixToMono(chunk.toByteArray(), channels)
 
-        try {
-            coroutineScope {
-                var isVoiceActivityDetected = false
+            val resampledChunk = resample(monoChunk, sampleRate, VoiceActivityDetection.SAMPLE_RATE)
 
-                val jobs = splitIntoChunks(
-                    inputData = resampledBytes,
-                    chunkSize = calculateChunkSize(
-                        sampleRate = VoiceActivityDetection.SAMPLE_RATE,
-                        channels = VoiceActivityDetection.CHANNELS,
-                        millis = MINIMUM_CHUNK_MILLIS
-                    )
-                ).mapIndexed { index, chunk ->
-                    async(Dispatchers.Default) {
-                        when (val result = nativeFvadVoiceActivityDetection.process(chunk)) {
-                            -1 -> throw IllegalStateException("Unable to process input at chunk $index")
+            val paddingChunkSize = calculateChunkSize(
+                sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+                channels = VoiceActivityDetection.CHANNELS,
+                millis = MINIMUM_CHUNK_MILLIS
+            )
 
-                            else -> result == 1
-                        }
-                    }
-                }
+            when (nativeFvadVoiceActivityDetection.process(resampledChunk.copyOf(paddingChunkSize))) {
+                0 -> null
 
-                jobs.forEach {
-                    when {
-                        isVoiceActivityDetected -> it.cancel()
+                1 -> chunk.toByteArray().copyOf(chunkSize)
 
-                        it.await() -> isVoiceActivityDetected = true
-                    }
-                }
-
-                isVoiceActivityDetected
+                else -> throw IllegalStateException("Unable to process input at chunk $index")
             }
-        } catch (e: CancellationException) {
-            false
-        }
+        }.fold(byteArrayOf()) { acc, chunk -> acc + chunk }
     }
 
     override fun reset() = runCatching {

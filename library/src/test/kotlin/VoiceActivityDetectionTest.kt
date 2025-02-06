@@ -83,7 +83,9 @@ class VoiceActivityDetectionTest {
                         val pcmBytes = loadData(sampleRate, channels, duration)
 
                         measureTime {
-                            assert(voiceActivityDetection.detect(pcmBytes, sampleRate, channels).getOrThrow())
+                            assert(
+                                voiceActivityDetection.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty()
+                            )
                         }.also(measurements::add)
                     }
                 }
@@ -106,7 +108,7 @@ class VoiceActivityDetectionTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/short.wav")!!.readBytes()
         val sampleRate = 48_000
         val channels = 1
-        assertTrue(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow())
+        assertTrue(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
     }
 
     @Test
@@ -114,7 +116,7 @@ class VoiceActivityDetectionTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/short.wav")!!.readBytes()
         val sampleRate = 48_000
         val channels = 1
-        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow())
+        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
     }
 
     @Test
@@ -123,7 +125,7 @@ class VoiceActivityDetectionTest {
         val channels = 2
         chunksSizes.forEach { chunkSize ->
             generateSilence(sampleRate, channels, 30.seconds).asSequence().chunked(chunkSize).forEach { pcmBytes ->
-                assertFalse(fvad.detect(pcmBytes.toByteArray(), sampleRate, channels).getOrThrow())
+                assertFalse(fvad.detect(pcmBytes.toByteArray(), sampleRate, channels).getOrThrow().isNotEmpty())
             }
         }
     }
@@ -134,7 +136,7 @@ class VoiceActivityDetectionTest {
         val channels = 2
         chunksSizes.forEach { chunkSize ->
             generateSilence(sampleRate, channels, 30.seconds).asSequence().chunked(chunkSize).forEach { pcmBytes ->
-                assertFalse(fvad.detect(pcmBytes.toByteArray(), sampleRate, channels).getOrThrow())
+                assertFalse(fvad.detect(pcmBytes.toByteArray(), sampleRate, channels).getOrThrow().isNotEmpty())
             }
         }
     }

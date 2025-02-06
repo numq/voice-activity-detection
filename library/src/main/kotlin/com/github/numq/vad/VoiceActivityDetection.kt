@@ -4,7 +4,7 @@ import com.github.numq.vad.fvad.FvadVoiceActivityDetection
 import com.github.numq.vad.fvad.NativeFvadVoiceActivityDetection
 import com.github.numq.vad.fvad.VoiceActivityDetectionMode
 import com.github.numq.vad.silero.SileroVoiceActivityDetection
-import com.github.numq.vad.silero.model.SileroOnnxModel
+import com.github.numq.vad.silero.model.DefaultSileroOnnxModel
 import java.io.File
 
 interface VoiceActivityDetection : AutoCloseable {
@@ -18,9 +18,9 @@ interface VoiceActivityDetection : AutoCloseable {
      *
      * @param sampleRate the sampling rate of the audio data in Hz.
      * @param channels the number of audio channels.
-     * @return the minimum chunk size in bytes.
+     * @return a [Result] containing the minimum chunk size in bytes.
      */
-    fun minimumInputSize(sampleRate: Int, channels: Int): Int
+    fun minimumInputSize(sampleRate: Int, channels: Int): Result<Int>
 
     /**
      * Detects voice activity in the given PCM audio data.
@@ -31,9 +31,9 @@ interface VoiceActivityDetection : AutoCloseable {
      * @param pcmBytes the audio data in PCM format.
      * @param sampleRate the sampling rate of the audio data in Hz.
      * @param channels the number of audio channels (e.g., 1 for mono, 2 for stereo).
-     * @return a [Result] containing true if voice activity is detected, false otherwise.
+     * @return a [Result] containing the filtered input data, which contains only recognized speech.
      */
-    suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int): Result<Boolean>
+    suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int): Result<ByteArray>
 
     /**
      * Resets the voice activity detection internal state.
@@ -105,7 +105,7 @@ interface VoiceActivityDetection : AutoCloseable {
                 }
 
                 SileroVoiceActivityDetection(
-                    model = SileroOnnxModel(
+                    model = DefaultSileroOnnxModel(
                         modelPath = tempFile.absolutePath,
                         targetSampleRate = SAMPLE_RATE
                     ),
