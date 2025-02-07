@@ -12,6 +12,14 @@ internal class FvadVoiceActivityDetection(
         const val MINIMUM_CHUNK_MILLIS = 10
     }
 
+    override fun inputSizeForMillis(sampleRate: Int, channels: Int, millis: Long) = runCatching {
+        val minSize = minimumInputSize(sampleRate, channels).getOrThrow()
+
+        val factor = (millis + MINIMUM_CHUNK_MILLIS - 1) / MINIMUM_CHUNK_MILLIS
+
+        (factor * minSize).toInt()
+    }
+
     override fun minimumInputSize(sampleRate: Int, channels: Int) = runCatching {
         calculateChunkSize(sampleRate = sampleRate, channels = channels, millis = MINIMUM_CHUNK_MILLIS)
     }

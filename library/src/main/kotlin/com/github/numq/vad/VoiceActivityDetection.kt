@@ -14,6 +14,16 @@ interface VoiceActivityDetection : AutoCloseable {
     }
 
     /**
+     * Returns the minimum possible input size for the given number of milliseconds.
+     *
+     * @param sampleRate the sampling rate of the audio data in Hz.
+     * @param channels the number of audio channels.
+     * @param millis the duration in milliseconds.
+     * @return a [Result] containing the minimum chunk size in bytes.
+     */
+    fun inputSizeForMillis(sampleRate: Int, channels: Int, millis: Long): Result<Int>
+
+    /**
      * Returns the minimum effective chunk size - the size at which there is no need to fill the input data with silence.
      *
      * @param sampleRate the sampling rate of the audio data in Hz.
