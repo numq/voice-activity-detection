@@ -8,7 +8,7 @@ package com.github.numq.vad.fvad
  * false positives). However, this also increases the likelihood of missed
  * detections (false negatives).
  */
-enum class VoiceActivityDetectionMode {
+enum class FvadVoiceActivityDetectionMode {
     /**
      * Default mode. Balanced for general use.
      */

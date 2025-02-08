@@ -2,28 +2,28 @@ package selector
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.github.numq.vad.fvad.VoiceActivityDetectionMode
+import com.github.numq.vad.fvad.FvadVoiceActivityDetectionMode
 
 @Composable
 fun ModeSelector(
     modifier: Modifier,
-    selectedMode: VoiceActivityDetectionMode,
-    selectMode: (VoiceActivityDetectionMode) -> Unit,
+    selectedMode: FvadVoiceActivityDetectionMode,
+    selectMode: (FvadVoiceActivityDetectionMode) -> Unit,
 ) {
     Selector(
         modifier = modifier,
-        items = VoiceActivityDetectionMode.entries.map { mode ->
+        items = FvadVoiceActivityDetectionMode.entries.map { mode ->
             when (mode) {
-                VoiceActivityDetectionMode.QUALITY -> "Quality"
+                FvadVoiceActivityDetectionMode.QUALITY -> "Quality"
 
-                VoiceActivityDetectionMode.LOW_BITRATE -> "Low bitrate"
+                FvadVoiceActivityDetectionMode.LOW_BITRATE -> "Low bitrate"
 
-                VoiceActivityDetectionMode.AGGRESSIVE -> "Aggressive"
+                FvadVoiceActivityDetectionMode.AGGRESSIVE -> "Aggressive"
 
-                VoiceActivityDetectionMode.VERY_AGGRESSIVE -> "Very aggressive"
+                FvadVoiceActivityDetectionMode.VERY_AGGRESSIVE -> "Very aggressive"
             }
         },
-        selectedIndex = VoiceActivityDetectionMode.entries.indexOf(selectedMode),
-        selectIndex = { index -> selectMode(VoiceActivityDetectionMode.entries.elementAt(index)) }
+        selectedIndex = FvadVoiceActivityDetectionMode.entries.indexOf(selectedMode),
+        selectIndex = { index -> selectMode(FvadVoiceActivityDetectionMode.entries.elementAt(index)) }
     )
 }

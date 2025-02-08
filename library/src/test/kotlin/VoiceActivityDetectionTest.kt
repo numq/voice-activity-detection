@@ -1,5 +1,5 @@
 import com.github.numq.vad.VoiceActivityDetection
-import com.github.numq.vad.fvad.VoiceActivityDetectionMode
+import com.github.numq.vad.fvad.FvadVoiceActivityDetectionMode
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.*
 import kotlin.test.assertFalse
@@ -38,7 +38,7 @@ class VoiceActivityDetectionTest {
 
             VoiceActivityDetection.Fvad.load(
                 libfvad = "$pathToBinaries\\libfvad.dll",
-                libvad = "$pathToBinaries\\libvad.dll"
+                voiceActivityDetection = "$pathToBinaries\\voice-activity-detection.dll"
             ).getOrThrow()
 
             fvad = VoiceActivityDetection.Fvad.create().getOrThrow()
@@ -72,7 +72,7 @@ class VoiceActivityDetectionTest {
     ) = runTest {
         val measurements = mutableListOf<Duration>()
 
-        VoiceActivityDetectionMode.entries.forEach { mode ->
+        FvadVoiceActivityDetectionMode.entries.forEach { mode ->
             if (voiceActivityDetection is VoiceActivityDetection.Fvad) {
                 voiceActivityDetection.changeMode(mode).getOrThrow()
             }

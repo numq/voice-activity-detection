@@ -21,7 +21,7 @@ import device.DeviceService
 import interaction.InteractionScreen
 import playback.PlaybackService
 
-const val APP_NAME = "Voice Activity Detection"
+const val APP_NAME = "Voice activity detection"
 
 fun main() {
     val pathToBinaries = Thread.currentThread().contextClassLoader.getResource("bin")?.file
@@ -30,7 +30,7 @@ fun main() {
 
     VoiceActivityDetection.Fvad.load(
         libfvad = "$pathToBinaries\\libfvad.dll",
-        libvad = "$pathToBinaries\\libvad.dll"
+        voiceActivityDetection = "$pathToBinaries\\voice-activity-detection.dll"
     ).getOrThrow()
 
     singleWindowApplication(state = WindowState(width = 512.dp, height = 512.dp), title = APP_NAME) {

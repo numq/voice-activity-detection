@@ -9,6 +9,8 @@ void handleException(JNIEnv *env, const std::string &errorMessage) {
 }
 
 Fvad *getPointer(jlong handle) {
+    std::shared_lock<std::shared_mutex> lock(mutex);
+
     auto it = pointers.find(handle);
     if (it == pointers.end()) {
         throw std::runtime_error("Invalid handle");
@@ -128,7 +130,7 @@ Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_resetNative(JNIEn
 
 JNIEXPORT void JNICALL
 Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection_freeNative(JNIEnv *env, jclass thisClass, jlong handle) {
-    std::shared_lock<std::shared_mutex> lock(mutex);
+    std::unique_lock<std::shared_mutex> lock(mutex);
 
     try {
         if (pointers.erase(handle) == 0) {

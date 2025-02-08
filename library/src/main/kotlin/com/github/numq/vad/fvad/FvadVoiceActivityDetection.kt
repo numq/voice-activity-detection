@@ -24,9 +24,9 @@ internal class FvadVoiceActivityDetection(
         calculateChunkSize(sampleRate = sampleRate, channels = channels, millis = MINIMUM_CHUNK_MILLIS)
     }
 
-    override var mode = VoiceActivityDetectionMode.QUALITY
+    override var mode = FvadVoiceActivityDetectionMode.QUALITY
 
-    override fun changeMode(mode: VoiceActivityDetectionMode) = runCatching {
+    override fun changeMode(mode: FvadVoiceActivityDetectionMode) = runCatching {
         check(nativeFvadVoiceActivityDetection.setMode(mode.ordinal) == 0) { "Unable to set mode" }
 
         this@FvadVoiceActivityDetection.mode = mode

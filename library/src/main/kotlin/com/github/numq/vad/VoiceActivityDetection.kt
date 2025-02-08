@@ -1,8 +1,8 @@
 package com.github.numq.vad
 
 import com.github.numq.vad.fvad.FvadVoiceActivityDetection
+import com.github.numq.vad.fvad.FvadVoiceActivityDetectionMode
 import com.github.numq.vad.fvad.NativeFvadVoiceActivityDetection
-import com.github.numq.vad.fvad.VoiceActivityDetectionMode
 import com.github.numq.vad.silero.SileroVoiceActivityDetection
 import com.github.numq.vad.silero.model.DefaultSileroOnnxModel
 import java.io.File
@@ -56,7 +56,7 @@ interface VoiceActivityDetection : AutoCloseable {
         /**
          * The current mode of voice activity detection.
          */
-        val mode: VoiceActivityDetectionMode
+        val mode: FvadVoiceActivityDetectionMode
 
         /**
          * Changes the detection mode.
@@ -64,7 +64,7 @@ interface VoiceActivityDetection : AutoCloseable {
          * @param mode the new mode to be set.
          * @return a [Result] indicating the success or failure of the operation.
          */
-        fun changeMode(mode: VoiceActivityDetectionMode): Result<Unit>
+        fun changeMode(mode: FvadVoiceActivityDetectionMode): Result<Unit>
 
         companion object {
             private var isLoaded = false
@@ -72,13 +72,13 @@ interface VoiceActivityDetection : AutoCloseable {
             /**
              * Loads the native library.
              *
-             * @param libfvad the path to the libfvad library.
-             * @param libvad the path to the libvad library.
+             * @param libfvad the path to the `libfvad` binary.
+             * @param voiceActivityDetection the path to the `voice-activity-detection` binary.
              * @return a [Result] indicating the success or failure of the operation.
              */
-            fun load(libfvad: String, libvad: String) = runCatching {
+            fun load(libfvad: String, voiceActivityDetection: String) = runCatching {
                 System.load(libfvad)
-                System.load(libvad)
+                System.load(voiceActivityDetection)
             }.onSuccess {
                 isLoaded = true
             }

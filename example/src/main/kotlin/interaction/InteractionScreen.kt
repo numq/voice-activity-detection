@@ -25,7 +25,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
 import playback.PlaybackService
 import selector.ModeSelector
-import selector.VadItemSelector
+import item.VoiceActivityDetectionItem
+import selector.VoiceActivityDetectionItemSelector
 
 @Composable
 fun InteractionScreen(
@@ -44,7 +45,7 @@ fun InteractionScreen(
 
     var selectedMode by remember { mutableStateOf(fvad.mode) }
 
-    var selectedVadItem by remember { mutableStateOf(VadItem.FVAD) }
+    var selectedVoiceActivityDetectionItem by remember { mutableStateOf(VoiceActivityDetectionItem.FVAD) }
 
     val capturingDevices = remember { mutableStateListOf<Device>() }
 
@@ -76,7 +77,7 @@ fun InteractionScreen(
         }
     }
 
-    LaunchedEffect(selectedVadItem, selectedMode, selectedCapturingDevice) {
+    LaunchedEffect(selectedVoiceActivityDetectionItem, selectedMode, selectedCapturingDevice) {
         isVoiceActivityDetected = false
 
         capturingJob?.cancelAndJoin()
@@ -94,13 +95,13 @@ fun InteractionScreen(
 
                 val channels = device.channels
 
-                val chunkSize = when (selectedVadItem) {
-                    VadItem.FVAD -> fvad.minimumInputSize(
+                val chunkSize = when (selectedVoiceActivityDetectionItem) {
+                    VoiceActivityDetectionItem.FVAD -> fvad.minimumInputSize(
                         sampleRate = sampleRate,
                         channels = channels
                     )
 
-                    VadItem.SILERO -> silero.minimumInputSize(
+                    VoiceActivityDetectionItem.SILERO -> silero.minimumInputSize(
                         sampleRate = sampleRate,
                         channels = channels
                     )
@@ -108,31 +109,33 @@ fun InteractionScreen(
 
                 capturingService.capture(
                     device = device,
-                    chunkSize = chunkSize
+                    chunkSize = chunkSize.getOrThrow()
                 ).catch {
                     if (it != CancellationException()) {
                         handleThrowable(it)
                     }
                 }.collect { pcmBytes ->
-                    isVoiceActivityDetected = when (selectedVadItem) {
-                        VadItem.FVAD -> fvad
+                    val speechBytes = when (selectedVoiceActivityDetectionItem) {
+                        VoiceActivityDetectionItem.FVAD -> fvad
 
-                        VadItem.SILERO -> silero
+                        VoiceActivityDetectionItem.SILERO -> silero
                     }.detect(
                         pcmBytes = pcmBytes,
                         sampleRate = sampleRate,
                         channels = channels
-                    ).onFailure(handleThrowable).getOrDefault(false)
+                    ).onFailure(handleThrowable).getOrThrow()
+
+                    isVoiceActivityDetected = speechBytes.isNotEmpty()
 
                     if (isVoiceActivityDetected) {
-                        playbackService.write(pcmBytes = pcmBytes).getOrThrow()
+                        playbackService.write(pcmBytes = speechBytes).getOrThrow()
                     } else {
                         playbackService.play().getOrThrow()
 
-                        when (selectedVadItem) {
-                            VadItem.FVAD -> fvad
+                        when (selectedVoiceActivityDetectionItem) {
+                            VoiceActivityDetectionItem.FVAD -> fvad
 
-                            VadItem.SILERO -> silero
+                            VoiceActivityDetectionItem.SILERO -> silero
                         }.reset()
                     }
                 }
@@ -146,21 +149,21 @@ fun InteractionScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            VadItemSelector(
+            VoiceActivityDetectionItemSelector(
                 modifier = Modifier.fillMaxWidth(),
-                selectedVadItem = selectedVadItem
+                selectedVoiceActivityDetectionItem = selectedVoiceActivityDetectionItem
             ) { vad ->
-                selectedVadItem = vad
+                selectedVoiceActivityDetectionItem = vad
 
-                when (selectedVadItem) {
-                    VadItem.FVAD -> fvad
+                when (selectedVoiceActivityDetectionItem) {
+                    VoiceActivityDetectionItem.FVAD -> fvad
 
-                    VadItem.SILERO -> silero
+                    VoiceActivityDetectionItem.SILERO -> silero
                 }.reset().onFailure(handleThrowable)
             }
 
             AnimatedVisibility(
-                visible = selectedVadItem == VadItem.FVAD,
+                visible = selectedVoiceActivityDetectionItem == VoiceActivityDetectionItem.FVAD,
                 enter = expandIn(),
                 exit = shrinkOut()
             ) {
