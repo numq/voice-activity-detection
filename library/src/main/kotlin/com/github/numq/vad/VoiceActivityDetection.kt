@@ -99,13 +99,15 @@ interface VoiceActivityDetection : AutoCloseable {
 
     interface Silero : VoiceActivityDetection {
         companion object {
+            private const val DEFAULT_THRESHOLD = .5f
+
             /**
              * Creates a new instance of [VoiceActivityDetection].
              *
              * @param threshold the voice activity detection threshold.
              * @return a [Result] containing the created instance if successful.
              */
-            fun create(threshold: Float = .5f): Result<Silero> = runCatching {
+            fun create(threshold: Float = DEFAULT_THRESHOLD): Result<Silero> = runCatching {
                 val resourceStream = Companion::class.java.classLoader.getResourceAsStream("model/silero_vad.onnx")
                     ?: throw IllegalStateException("Model file 'silero_vad.onnx' not found in resources")
 

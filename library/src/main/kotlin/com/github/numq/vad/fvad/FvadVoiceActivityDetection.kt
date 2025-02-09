@@ -9,7 +9,7 @@ internal class FvadVoiceActivityDetection(
     private val nativeFvadVoiceActivityDetection: NativeFvadVoiceActivityDetection,
 ) : VoiceActivityDetection.Fvad {
     private companion object {
-        const val MINIMUM_CHUNK_MILLIS = 10
+        const val MINIMUM_CHUNK_MILLIS = 30
     }
 
     override fun inputSizeForMillis(sampleRate: Int, channels: Int, millis: Long) = runCatching {
