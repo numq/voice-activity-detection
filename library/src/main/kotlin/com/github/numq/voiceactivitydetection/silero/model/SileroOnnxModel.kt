@@ -1,4 +1,4 @@
-package com.github.numq.vad.silero.model
+package com.github.numq.voiceactivitydetection.silero.model
 
 internal interface SileroOnnxModel : AutoCloseable {
     fun process(input: Array<FloatArray>): Result<FloatArray>

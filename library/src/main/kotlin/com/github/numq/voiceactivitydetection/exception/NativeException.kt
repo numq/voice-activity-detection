@@ -1,3 +1,3 @@
-package com.github.numq.vad.exception
+package com.github.numq.voiceactivitydetection.exception
 
 data class NativeException(override val cause: Throwable) : Exception(cause)

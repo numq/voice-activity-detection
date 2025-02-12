@@ -1,4 +1,4 @@
-package com.github.numq.vad.fvad
+package com.github.numq.voiceactivitydetection.fvad
 
 /**
  * Represents the operating ("aggressiveness") modes for voice activity detection.

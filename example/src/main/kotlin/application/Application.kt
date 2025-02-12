@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.singleWindowApplication
 import capturing.CapturingService
-import com.github.numq.vad.VoiceActivityDetection
+import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import device.DeviceService
 import interaction.InteractionScreen
 import playback.PlaybackService

@@ -18,14 +18,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import capturing.CapturingService
-import com.github.numq.vad.VoiceActivityDetection
+import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import device.Device
 import device.DeviceService
+import item.VoiceActivityDetectionItem
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
 import playback.PlaybackService
 import selector.ModeSelector
-import item.VoiceActivityDetectionItem
 import selector.VoiceActivityDetectionItemSelector
 
 @Composable
@@ -56,7 +56,7 @@ fun InteractionScreen(
     var isVoiceActivityDetected by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshRequested) {
-        deviceJob?.cancel()
+        deviceJob?.cancelAndJoin()
         deviceJob = null
 
         if (refreshRequested) {
@@ -125,10 +125,12 @@ fun InteractionScreen(
                         channels = channels
                     ).onFailure(handleThrowable).getOrThrow()
 
-                    isVoiceActivityDetected = speechBytes.isNotEmpty()
+                    isVoiceActivityDetected = speechBytes.parts.isNotEmpty()
 
                     if (isVoiceActivityDetected) {
-                        playbackService.write(pcmBytes = speechBytes).getOrThrow()
+                        playbackService.write(
+                            pcmBytes = speechBytes.parts.flatMap(ByteArray::toList).toByteArray()
+                        ).getOrThrow()
                     } else {
                         playbackService.play().getOrThrow()
 

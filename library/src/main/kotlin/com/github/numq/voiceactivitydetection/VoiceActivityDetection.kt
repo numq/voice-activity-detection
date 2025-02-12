@@ -1,10 +1,10 @@
-package com.github.numq.vad
+package com.github.numq.voiceactivitydetection
 
-import com.github.numq.vad.fvad.FvadVoiceActivityDetection
-import com.github.numq.vad.fvad.FvadVoiceActivityDetectionMode
-import com.github.numq.vad.fvad.NativeFvadVoiceActivityDetection
-import com.github.numq.vad.silero.SileroVoiceActivityDetection
-import com.github.numq.vad.silero.model.DefaultSileroOnnxModel
+import com.github.numq.voiceactivitydetection.fvad.FvadVoiceActivityDetection
+import com.github.numq.voiceactivitydetection.fvad.FvadVoiceActivityDetectionMode
+import com.github.numq.voiceactivitydetection.fvad.NativeFvadVoiceActivityDetection
+import com.github.numq.voiceactivitydetection.silero.SileroVoiceActivityDetection
+import com.github.numq.voiceactivitydetection.silero.model.DefaultSileroOnnxModel
 import java.io.File
 
 interface VoiceActivityDetection : AutoCloseable {
@@ -41,9 +41,10 @@ interface VoiceActivityDetection : AutoCloseable {
      * @param pcmBytes the audio data in PCM format.
      * @param sampleRate the sampling rate of the audio data in Hz.
      * @param channels the number of audio channels (e.g., 1 for mono, 2 for stereo).
-     * @return a [Result] containing the filtered input data, which contains only recognized speech.
+     * @return a [Result] containing a [DetectionResult], which includes a list of detected speech fragments
+     * and a boolean indicating whether the last fragment is complete.
      */
-    suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int): Result<ByteArray>
+    suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int): Result<DetectionResult>
 
     /**
      * Resets the voice activity detection internal state.

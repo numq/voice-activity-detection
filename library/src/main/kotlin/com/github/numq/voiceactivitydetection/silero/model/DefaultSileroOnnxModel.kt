@@ -1,4 +1,4 @@
-package com.github.numq.vad.silero.model
+package com.github.numq.voiceactivitydetection.silero.model
 
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment

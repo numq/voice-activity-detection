@@ -2,7 +2,7 @@ package selector
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.github.numq.vad.fvad.FvadVoiceActivityDetectionMode
+import com.github.numq.voiceactivitydetection.fvad.FvadVoiceActivityDetectionMode
 
 @Composable
 fun ModeSelector(

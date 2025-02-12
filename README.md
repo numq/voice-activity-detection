@@ -74,7 +74,9 @@ voice-controlled systems.
 
 - Call `inputSizeForMillis` to get the input data size for N milliseconds
 
+
 - Call `minimumInputSize` to get the audio producer buffer size for real-time detection
+
 
 - Call `detect` passing the input data, sample rate, and number of channels as arguments
 

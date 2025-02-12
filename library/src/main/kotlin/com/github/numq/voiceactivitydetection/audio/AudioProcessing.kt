@@ -1,4 +1,4 @@
-package com.github.numq.vad.audio
+package com.github.numq.voiceactivitydetection.audio
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

@@ -1,6 +1,6 @@
-package com.github.numq.vad.fvad
+package com.github.numq.voiceactivitydetection.fvad
 
-import com.github.numq.vad.exception.NativeException
+import com.github.numq.voiceactivitydetection.exception.NativeException
 import java.lang.ref.Cleaner
 
 internal class NativeFvadVoiceActivityDetection : AutoCloseable {

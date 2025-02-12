@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
-add_library(voice-activity-detection SHARED src/Java_com_github_numq_vad_fvad_NativeFvadVoiceActivityDetection.cpp)
+add_library(voice-activity-detection SHARED src/Java_com_github_numq_voiceactivitydetection_fvad_NativeFvadVoiceActivityDetection.cpp)
 
 find_package(JNI)
 
