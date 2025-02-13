@@ -33,7 +33,7 @@ internal class SileroVoiceActivityDetection(
 
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(parts = emptyList(), isCompleted = true)
+        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(fragments = emptyList(), isCompleted = true)
 
         val chunkSize = calculateChunkSize(
             sampleRate = sampleRate,
@@ -47,7 +47,7 @@ internal class SileroVoiceActivityDetection(
 
         val lastIndex = chunks.toList().lastIndex
 
-        val parts = mutableListOf<ByteArray>()
+        val fragments = mutableListOf<ByteArray>()
 
         ByteArrayOutputStream().use { baos ->
             chunks.forEachIndexed { index, chunk ->
@@ -75,14 +75,14 @@ internal class SileroVoiceActivityDetection(
                     baos.write(chunk.toByteArray().copyOf(chunkSize))
 
                     if (index == lastIndex) {
-                        parts.add(baos.toByteArray())
+                        fragments.add(baos.toByteArray())
 
                         baos.reset()
 
                         isCompleted = true
                     }
                 } else if (baos.size() > 0) {
-                    parts.add(baos.toByteArray())
+                    fragments.add(baos.toByteArray())
 
                     baos.reset()
 
@@ -92,7 +92,7 @@ internal class SileroVoiceActivityDetection(
                 }
             }
 
-            DetectionResult(parts = parts, isCompleted = isCompleted)
+            DetectionResult(fragments = fragments, isCompleted = isCompleted)
         }
     }
 

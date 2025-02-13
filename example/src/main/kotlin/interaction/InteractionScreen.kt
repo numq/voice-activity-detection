@@ -125,11 +125,11 @@ fun InteractionScreen(
                         channels = channels
                     ).onFailure(handleThrowable).getOrThrow()
 
-                    isVoiceActivityDetected = speechBytes.parts.isNotEmpty()
+                    isVoiceActivityDetected = speechBytes.fragments.isNotEmpty()
 
                     if (isVoiceActivityDetected) {
                         playbackService.write(
-                            pcmBytes = speechBytes.parts.flatMap(ByteArray::toList).toByteArray()
+                            pcmBytes = speechBytes.fragments.flatMap(ByteArray::toList).toByteArray()
                         ).getOrThrow()
                     } else {
                         playbackService.play().getOrThrow()

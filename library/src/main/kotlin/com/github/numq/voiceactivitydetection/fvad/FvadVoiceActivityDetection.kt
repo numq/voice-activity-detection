@@ -39,7 +39,7 @@ internal class FvadVoiceActivityDetection(
 
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(parts = emptyList(), isCompleted = true)
+        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(fragments = emptyList(), isCompleted = true)
 
         val chunkSize = calculateChunkSize(
             sampleRate = sampleRate,
@@ -53,7 +53,7 @@ internal class FvadVoiceActivityDetection(
 
         val lastIndex = chunks.toList().lastIndex
 
-        val parts = mutableListOf<ByteArray>()
+        val fragments = mutableListOf<ByteArray>()
 
         ByteArrayOutputStream().use { baos ->
             chunks.forEachIndexed { index, chunk ->
@@ -69,7 +69,7 @@ internal class FvadVoiceActivityDetection(
 
                 when (nativeFvadVoiceActivityDetection.process(resampledChunk.copyOf(paddedChunkSize))) {
                     0 -> if (baos.size() > 0) {
-                        parts.add(baos.toByteArray())
+                        fragments.add(baos.toByteArray())
 
                         baos.reset()
 
@@ -82,7 +82,7 @@ internal class FvadVoiceActivityDetection(
                         baos.write(chunk.toByteArray().copyOf(chunkSize))
 
                         if (index == lastIndex) {
-                            parts.add(baos.toByteArray())
+                            fragments.add(baos.toByteArray())
 
                             baos.reset()
 
@@ -94,7 +94,7 @@ internal class FvadVoiceActivityDetection(
                 }
             }
 
-            DetectionResult(parts = parts, isCompleted = isCompleted)
+            DetectionResult(fragments = fragments, isCompleted = isCompleted)
         }
     }
 

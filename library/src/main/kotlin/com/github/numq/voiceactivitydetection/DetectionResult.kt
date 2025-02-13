@@ -1,3 +1,3 @@
 package com.github.numq.voiceactivitydetection
 
-data class DetectionResult(val parts: List<ByteArray>, val isCompleted: Boolean)
+data class DetectionResult(val fragments: List<ByteArray>, val isCompleted: Boolean)

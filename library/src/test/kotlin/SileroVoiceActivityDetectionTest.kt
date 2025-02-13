@@ -33,7 +33,7 @@ class SileroVoiceActivityDetectionTest {
                 sampleRates.forEach { sampleRate ->
                     val pcmBytes = generateSilence(sampleRate, channels, duration)
 
-                    assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+                    assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
                     silero.reset()
                 }
@@ -47,7 +47,7 @@ class SileroVoiceActivityDetectionTest {
         val sampleRate = 48_000
         val channels = 1
 
-        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
         silero.reset()
     }
@@ -61,7 +61,7 @@ class SileroVoiceActivityDetectionTest {
 
         generateSilence(sampleRate, channels, 5.seconds).asSequence().chunked(chunkSize).map(List<Byte>::toByteArray)
             .forEach { pcmBytes ->
-                assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+                assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
                 silero.reset()
             }
@@ -78,7 +78,7 @@ class SileroVoiceActivityDetectionTest {
         val results = mutableListOf<Boolean>()
 
         pcmBytes.asSequence().chunked(chunkSize).map(List<Byte>::toByteArray).forEach { bytes ->
-            results.add(silero.detect(bytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+            results.add(silero.detect(bytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
             silero.reset()
         }

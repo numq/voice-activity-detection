@@ -46,7 +46,7 @@ class FvadVoiceActivityDetectionTest {
                     sampleRates.forEach { sampleRate ->
                         val pcmBytes = generateSilence(sampleRate, channels, duration)
 
-                        assertFalse(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+                        assertFalse(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
                         fvad.reset()
                     }
@@ -64,7 +64,7 @@ class FvadVoiceActivityDetectionTest {
         FvadVoiceActivityDetectionMode.entries.forEach { mode ->
             fvad.changeMode(mode).getOrThrow()
 
-            assertTrue(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+            assertTrue(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
             fvad.reset()
         }
@@ -79,7 +79,7 @@ class FvadVoiceActivityDetectionTest {
 
         generateSilence(sampleRate, channels, 5.seconds).asSequence().chunked(chunkSize).map(List<Byte>::toByteArray)
             .forEach { pcmBytes ->
-                assertFalse(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+                assertFalse(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
                 fvad.reset()
             }
@@ -96,7 +96,7 @@ class FvadVoiceActivityDetectionTest {
         val results = mutableListOf<Boolean>()
 
         pcmBytes.asSequence().chunked(chunkSize).map(List<Byte>::toByteArray).forEach { bytes ->
-            results.add(fvad.detect(bytes, sampleRate, channels).getOrThrow().parts.isNotEmpty())
+            results.add(fvad.detect(bytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
 
             fvad.reset()
         }
