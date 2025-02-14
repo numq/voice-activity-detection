@@ -101,8 +101,6 @@ class FvadVoiceActivityDetectionTest {
             fvad.reset()
         }
 
-        println(results.joinToString(", "))
-
         assertTrue(results.contains(true))
     }
 }
