@@ -4,7 +4,7 @@ import com.github.numq.voiceactivitydetection.fvad.FvadVoiceActivityDetection
 import com.github.numq.voiceactivitydetection.fvad.FvadVoiceActivityDetectionMode
 import com.github.numq.voiceactivitydetection.fvad.NativeFvadVoiceActivityDetection
 import com.github.numq.voiceactivitydetection.silero.SileroVoiceActivityDetection
-import com.github.numq.voiceactivitydetection.silero.model.OnnxSileroModel
+import com.github.numq.voiceactivitydetection.silero.model.SileroModel
 import java.io.File
 
 interface VoiceActivityDetection : AutoCloseable {
@@ -118,7 +118,7 @@ interface VoiceActivityDetection : AutoCloseable {
                 }
 
                 SileroVoiceActivityDetection(
-                    model = OnnxSileroModel(
+                    model = SileroModel.create(
                         modelPath = tempFile.absolutePath,
                         targetSampleRate = SAMPLE_RATE
                     ),
