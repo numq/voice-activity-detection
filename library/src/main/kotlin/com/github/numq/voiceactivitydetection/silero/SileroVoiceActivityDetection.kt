@@ -5,11 +5,11 @@ import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.calculateChunkSize
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.downmixToMono
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.resample
-import com.github.numq.voiceactivitydetection.silero.model.SileroOnnxModel
+import com.github.numq.voiceactivitydetection.silero.model.SileroModel
 import java.io.ByteArrayOutputStream
 
 internal class SileroVoiceActivityDetection(
-    private val model: SileroOnnxModel,
+    private val model: SileroModel,
     private val threshold: Float,
 ) : VoiceActivityDetection.Silero {
     private companion object {

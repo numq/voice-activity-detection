@@ -4,7 +4,7 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 
-internal class DefaultSileroOnnxModel(modelPath: String, targetSampleRate: Int) : SileroOnnxModel {
+internal class OnnxSileroModel(modelPath: String, targetSampleRate: Int) : SileroModel {
     private companion object {
         const val CONTEXT_SIZE = 64
         const val BATCH_SIZE = 512

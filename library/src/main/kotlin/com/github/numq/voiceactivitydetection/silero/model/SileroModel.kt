@@ -1,6 +1,6 @@
 package com.github.numq.voiceactivitydetection.silero.model
 
-internal interface SileroOnnxModel : AutoCloseable {
+internal interface SileroModel : AutoCloseable {
     fun process(input: Array<FloatArray>): Result<FloatArray>
     fun reset(batchSize: Int = 0): Result<Unit>
 }
