@@ -32,18 +32,20 @@ internal object AudioProcessing {
         return monoBytes
     }
 
-    fun resample(inputData: ByteArray, inputSampleRate: Int, outputSampleRate: Int): ByteArray {
+    fun resample(inputData: ByteArray, channels: Int, inputSampleRate: Int, outputSampleRate: Int): ByteArray {
         require(inputData.isNotEmpty()) { "Input data must not be empty" }
+
+        require(channels > 0) { "Number of channels must be greater than 0" }
 
         require(inputSampleRate > 0) { "Input sample rate must be greater than 0" }
 
         require(outputSampleRate > 0) { "Output sample rate must be greater than 0" }
 
         val inputBuffer = ByteBuffer.wrap(inputData).order(ByteOrder.LITTLE_ENDIAN)
-        val inputSampleCount = inputData.size / 2
+        val inputSampleCount = inputData.size / (channels * 2)
         val outputSampleCount = ((inputSampleCount.toLong() * outputSampleRate) / inputSampleRate.toDouble()).toInt()
 
-        val outputData = ByteArray(outputSampleCount * 2)
+        val outputData = ByteArray(outputSampleCount * channels * 2)
         val outputBuffer = ByteBuffer.wrap(outputData).order(ByteOrder.LITTLE_ENDIAN)
 
         val step = inputSampleRate.toDouble() / outputSampleRate
@@ -53,12 +55,21 @@ internal object AudioProcessing {
             val srcIndex = inputIndex.toInt()
             val fraction = inputIndex - srcIndex
 
-            val leftSample = if (srcIndex < inputSampleCount) inputBuffer.getShort(srcIndex * 2).toInt() else 0
-            val rightSample =
-                if (srcIndex + 1 < inputSampleCount) inputBuffer.getShort((srcIndex + 1) * 2).toInt() else leftSample
+            for (ch in 0 until channels) {
+                val sampleOffset = srcIndex * channels + ch
+                val nextSampleOffset = (srcIndex + 1) * channels + ch
 
-            val interpolatedSample = (leftSample + fraction * (rightSample - leftSample)).toInt().toShort()
-            outputBuffer.putShort(interpolatedSample)
+                val currentSample = if (sampleOffset < inputSampleCount) {
+                    inputBuffer.getShort(sampleOffset * 2).toInt()
+                } else 0
+                val nextSample = if (nextSampleOffset < inputSampleCount) {
+                    inputBuffer.getShort(nextSampleOffset * 2).toInt()
+                } else currentSample
+
+                val interpolatedSample = (currentSample + fraction * (nextSample - currentSample)).toInt().toShort()
+
+                outputBuffer.putShort(interpolatedSample)
+            }
 
             inputIndex += step
         }

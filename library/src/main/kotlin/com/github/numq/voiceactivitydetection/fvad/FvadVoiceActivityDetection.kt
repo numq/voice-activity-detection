@@ -12,10 +12,11 @@ internal class FvadVoiceActivityDetection(
 ) : VoiceActivityDetection.Fvad {
     private companion object {
         const val MINIMUM_CHUNK_MILLIS = 30
+        const val CHANNELS_MONO = 1
     }
 
     override fun inputSizeForMillis(sampleRate: Int, channels: Int, millis: Long) = runCatching {
-        val minSize = minimumInputSize(sampleRate, channels).getOrThrow()
+        val minSize = minimumInputSize(sampleRate = sampleRate, channels = channels).getOrThrow()
 
         val factor = (millis + MINIMUM_CHUNK_MILLIS - 1) / MINIMUM_CHUNK_MILLIS
 
@@ -57,9 +58,14 @@ internal class FvadVoiceActivityDetection(
 
         ByteArrayOutputStream().use { baos ->
             chunks.forEachIndexed { index, chunk ->
-                val monoChunk = downmixToMono(chunk.toByteArray(), channels)
+                val monoChunk = downmixToMono(inputData = chunk.toByteArray(), channels = channels)
 
-                val resampledChunk = resample(monoChunk, sampleRate, VoiceActivityDetection.SAMPLE_RATE)
+                val resampledChunk = resample(
+                    inputData = monoChunk,
+                    channels = CHANNELS_MONO,
+                    inputSampleRate = sampleRate,
+                    outputSampleRate = VoiceActivityDetection.SAMPLE_RATE
+                )
 
                 val paddedChunkSize = calculateChunkSize(
                     sampleRate = VoiceActivityDetection.SAMPLE_RATE,
