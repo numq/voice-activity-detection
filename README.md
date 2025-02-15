@@ -53,9 +53,18 @@ voice-controlled systems.
 
 > See the [example](example) module for implementation details
 
+### TL;DR
+
+- Call `detect` to process the input data
+- After calling detect, check `isLastFragmentComplete` in the result to decide whether to:
+    - Use the last fragment directly (if `isLastFragmentComplete` is **true**)
+    - Cache the fragment for further processing (if `isLastFragmentComplete` is **false**)
+
+### Step-by-step
+
 - Load binaries if you are going to use fvad
    ```kotlin
-   VoiceActivityDetection.Fvad.load(libfvad = "/path/to/libfvad", libvad = "/path/to/libvad")
+   VoiceActivityDetection.Fvad.load(libfvad = "/path/to/libfvad", voiceActivityDetection = "/path/to/voice-activity-detection")
    ```
 
 - Create an instance
