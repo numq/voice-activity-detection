@@ -34,7 +34,10 @@ internal class SileroVoiceActivityDetection(
 
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(fragments = emptyList(), isCompleted = true)
+        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(
+            fragments = emptyList(),
+            isLastFragmentComplete = true
+        )
 
         val chunkSize = calculateChunkSize(
             sampleRate = sampleRate,
@@ -42,7 +45,7 @@ internal class SileroVoiceActivityDetection(
             millis = MINIMUM_CHUNK_MILLIS
         )
 
-        var isCompleted = false
+        var isLastFragmentComplete = false
 
         val chunks = pcmBytes.asSequence().chunked(chunkSize)
 
@@ -85,7 +88,7 @@ internal class SileroVoiceActivityDetection(
 
                         baos.reset()
 
-                        isCompleted = true
+                        isLastFragmentComplete = true
                     }
                 } else if (baos.size() > 0) {
                     fragments.add(baos.toByteArray())
@@ -93,12 +96,12 @@ internal class SileroVoiceActivityDetection(
                     baos.reset()
 
                     if (index == lastIndex) {
-                        isCompleted = false
+                        isLastFragmentComplete = false
                     }
                 }
             }
 
-            DetectionResult(fragments = fragments, isCompleted = isCompleted)
+            DetectionResult(fragments = fragments, isLastFragmentComplete = isLastFragmentComplete)
         }
     }
 
