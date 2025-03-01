@@ -10,21 +10,22 @@ internal object AudioProcessing {
         if (channels == 1) return inputData
 
         require(channels > 0) { "Number of channels must be greater than 0" }
-
         require(inputData.size % (channels * 2) == 0) { "PCM byte size must be a multiple of the frame size (channels * 2)" }
 
         val monoBytes = ByteArray(inputData.size / channels)
         val inputBuffer = ByteBuffer.wrap(inputData).order(ByteOrder.LITTLE_ENDIAN)
         val outputBuffer = ByteBuffer.wrap(monoBytes).order(ByteOrder.LITTLE_ENDIAN)
 
-        val shortMin = Short.MIN_VALUE.toLong()
-        val shortMax = Short.MAX_VALUE.toLong()
+        val shortMin = Short.MIN_VALUE.toInt()
+        val shortMax = Short.MAX_VALUE.toInt()
 
         while (inputBuffer.remaining() >= channels * 2) {
-            var sampleSum = 0L
+            var sampleSum = 0
+
             for (channel in 0 until channels) {
-                sampleSum += inputBuffer.short.toLong()
+                sampleSum += inputBuffer.short.toInt()
             }
+
             val monoSample = (sampleSum / channels).coerceIn(shortMin, shortMax).toShort()
             outputBuffer.putShort(monoSample)
         }
@@ -83,15 +84,5 @@ internal object AudioProcessing {
         require(channels > 0) { "Number of channels must be greater than 0" }
 
         return (((sampleRate * millis) / 1000) * 2 * channels + 3) and -4
-    }
-
-    fun splitIntoChunks(inputData: ByteArray, chunkSize: Int): Sequence<ByteArray> {
-        require(inputData.isNotEmpty()) { "Input data must not be empty" }
-
-        require(chunkSize > 0) { "Chunk size must be greater than zero" }
-
-        return inputData.asSequence().chunked(chunkSize).map { chunk ->
-            chunk.toByteArray().copyOf(chunkSize)
-        }
     }
 }
