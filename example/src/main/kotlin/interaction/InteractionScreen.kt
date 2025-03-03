@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import capturing.CapturingService
+import com.github.numq.voiceactivitydetection.DetectedSpeech
 import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import device.Device
 import device.DeviceService
@@ -125,20 +126,26 @@ fun InteractionScreen(
                         channels = channels
                     ).onFailure(handleThrowable).getOrThrow()
 
-                    isVoiceActivityDetected = speechBytes.fragments.isNotEmpty()
+                    speechBytes.collect { detectedSpeech ->
+                        when (detectedSpeech) {
+                            is DetectedSpeech.Nothing -> {
+                                isVoiceActivityDetected = false
 
-                    if (isVoiceActivityDetected) {
-                        playbackService.write(
-                            pcmBytes = speechBytes.fragments.flatMap(ByteArray::toList).toByteArray()
-                        ).getOrThrow()
-                    } else {
-                        playbackService.play().getOrThrow()
+                                playbackService.play().getOrThrow()
 
-                        when (selectedVoiceActivityDetectionItem) {
-                            VoiceActivityDetectionItem.FVAD -> fvad
+                                when (selectedVoiceActivityDetectionItem) {
+                                    VoiceActivityDetectionItem.FVAD -> fvad
 
-                            VoiceActivityDetectionItem.SILERO -> silero
-                        }.reset()
+                                    VoiceActivityDetectionItem.SILERO -> silero
+                                }.reset()
+                            }
+
+                            is DetectedSpeech.Detected -> {
+                                isVoiceActivityDetected = true
+
+                                playbackService.write(pcmBytes = detectedSpeech.bytes).getOrThrow()
+                            }
+                        }
                     }
                 }
             }

@@ -6,15 +6,18 @@ import com.github.numq.voiceactivitydetection.audio.AudioProcessing.calculateChu
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.downmixToMono
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.resample
 import com.github.numq.voiceactivitydetection.silero.model.SileroModel
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import java.io.ByteArrayOutputStream
 
 internal class SileroVoiceActivityDetection(
     private val model: SileroModel,
     private val threshold: Float,
+    private val minSpeechDurationMillis: Long,
+    private val minSilenceDurationMillis: Long,
 ) : VoiceActivityDetection.Silero {
     private companion object {
         const val MINIMUM_CHUNK_MILLIS = 32
-        const val MIN_SILENCE_DURATION_MILLIS = 200
         const val CHANNELS_MONO = 1
     }
 
@@ -30,12 +33,17 @@ internal class SileroVoiceActivityDetection(
         calculateChunkSize(sampleRate = sampleRate, channels = channels, millis = MINIMUM_CHUNK_MILLIS)
     }
 
-    override suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int) = runCatching {
+    override suspend fun detect(
+        pcmBytes: ByteArray,
+        sampleRate: Int,
+        channels: Int,
+        isContinuous: Boolean,
+    ) = runCatching {
         require(sampleRate > 0) { "Sample rate must be greater than 0" }
 
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching emptyList()
+        if (pcmBytes.isEmpty()) return@runCatching emptyFlow()
 
         val chunkSize = calculateChunkSize(
             sampleRate = sampleRate,
@@ -43,63 +51,82 @@ internal class SileroVoiceActivityDetection(
             millis = MINIMUM_CHUNK_MILLIS
         )
 
-        val chunks = pcmBytes.asSequence().chunked(chunkSize)
+        val minSpeechSize = calculateChunkSize(
+            sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+            channels = VoiceActivityDetection.CHANNELS,
+            millis = minSpeechDurationMillis.toInt()
+        )
 
-        val lastIndex = chunks.toList().lastIndex
+        val chunks = pcmBytes.asSequence().chunked(chunkSize).iterator()
 
-        val detections = mutableListOf<DetectedSpeech>()
+        var silenceDurationMillis = 0
 
-        var silenceDurationMs = 0
+        var isSpeechOngoing = false
 
-        ByteArrayOutputStream().use { baos ->
-            chunks.forEachIndexed { index, chunk ->
-                val monoChunk = downmixToMono(inputData = chunk.toByteArray(), channels = channels)
+        flow {
+            ByteArrayOutputStream().use { baos ->
+                while (chunks.hasNext()) {
+                    val chunk = chunks.next()
 
-                val resampledChunk = resample(
-                    inputData = monoChunk,
-                    channels = CHANNELS_MONO,
-                    inputSampleRate = sampleRate,
-                    outputSampleRate = VoiceActivityDetection.SAMPLE_RATE
-                )
+                    val monoChunk = downmixToMono(inputData = chunk.toByteArray(), channels = channels)
 
-                val paddedChunkSize = calculateChunkSize(
-                    sampleRate = VoiceActivityDetection.SAMPLE_RATE,
-                    channels = VoiceActivityDetection.CHANNELS,
-                    millis = MINIMUM_CHUNK_MILLIS
-                )
+                    val resampledChunk = resample(
+                        inputData = monoChunk,
+                        channels = CHANNELS_MONO,
+                        inputSampleRate = sampleRate,
+                        outputSampleRate = VoiceActivityDetection.SAMPLE_RATE
+                    )
 
-                val paddedResampledChunk = resampledChunk.copyOf(paddedChunkSize)
+                    val paddedChunkSize = calculateChunkSize(
+                        sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+                        channels = VoiceActivityDetection.CHANNELS,
+                        millis = MINIMUM_CHUNK_MILLIS
+                    )
 
-                val floatSamples = FloatArray(paddedResampledChunk.size / 2) { i ->
-                    ((paddedResampledChunk[i * 2].toInt() and 0xFF) or (paddedResampledChunk[i * 2 + 1].toInt() shl 8)) / 32767f
+                    val paddedResampledChunk = resampledChunk.copyOf(paddedChunkSize)
+
+                    val floatSamples = FloatArray(paddedResampledChunk.size / 2) { i ->
+                        ((paddedResampledChunk[i * 2].toInt() and 0xFF) or (paddedResampledChunk[i * 2 + 1].toInt() shl 8)) / 32767f
+                    }
+
+                    val isSpeechDetected = model.process(arrayOf(floatSamples)).getOrThrow().firstOrNull()?.let {
+                        it >= threshold
+                    }
+
+                    requireNotNull(isSpeechDetected) { "Failed to process input" }
+
+                    if (isSpeechDetected) {
+                        baos.write(chunk.toByteArray().copyOf(chunkSize))
+
+                        silenceDurationMillis = 0
+
+                        if (baos.size() >= minSpeechSize) {
+                            isSpeechOngoing = true
+                        }
+                    } else {
+                        silenceDurationMillis += MINIMUM_CHUNK_MILLIS
+
+                        if (silenceDurationMillis >= minSilenceDurationMillis && baos.size() >= minSpeechSize) {
+                            emit(DetectedSpeech.Detected.Complete(bytes = baos.toByteArray()))
+
+                            baos.reset()
+
+                            isSpeechOngoing = false
+                        }
+
+                        if (!isSpeechOngoing) {
+                            emit(DetectedSpeech.Nothing)
+                        }
+                    }
                 }
 
-                val isSpeechDetected = model.process(arrayOf(floatSamples)).getOrThrow().firstOrNull()?.let {
-                    it >= threshold
-                }
-
-                requireNotNull(isSpeechDetected) { "Processing failed at chunk $index" }
-
-                if (isSpeechDetected) {
-                    baos.write(chunk.toByteArray().copyOf(chunkSize))
-
-                    silenceDurationMs = 0
-
-                    if (index == lastIndex) {
-                        detections.add(DetectedSpeech.Segment(bytes = baos.toByteArray()))
-                    }
-                } else {
-                    silenceDurationMs += MINIMUM_CHUNK_MILLIS
-
-                    if (silenceDurationMs >= MIN_SILENCE_DURATION_MILLIS && baos.size() > 0) {
-                        detections.add(DetectedSpeech.Complete(bytes = baos.toByteArray()))
-
-                        baos.reset()
-                    }
+                if (baos.size() >= minSpeechSize) {
+                    emit(
+                        if (isContinuous) DetectedSpeech.Detected.Segment(baos.toByteArray())
+                        else DetectedSpeech.Detected.Complete(baos.toByteArray())
+                    )
                 }
             }
-
-            detections
         }
     }
 

@@ -1,5 +1,7 @@
+import com.github.numq.voiceactivitydetection.DetectedSpeech
 import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import com.github.numq.voiceactivitydetection.fvad.FvadVoiceActivityDetectionMode
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -47,7 +49,10 @@ class FvadVoiceActivityDetectionTest {
                     sampleRates.forEach { sampleRate ->
                         val pcmBytes = generateSilence(sampleRate, channels, duration)
 
-                        assertFalse(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
+                        assertFalse(
+                            fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
+                                .filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
+                        )
 
                         fvad.reset()
                     }
@@ -65,7 +70,10 @@ class FvadVoiceActivityDetectionTest {
         FvadVoiceActivityDetectionMode.entries.forEach { mode ->
             fvad.changeMode(mode).getOrThrow()
 
-            assertTrue(fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
+            assertTrue(
+                fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
+                    .filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
+            )
 
             fvad.reset()
         }
@@ -77,10 +85,13 @@ class FvadVoiceActivityDetectionTest {
         val sampleRate = 22_050
         val channels = 1
 
-        val fragments = fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().size
+        fvad.changeMode(FvadVoiceActivityDetectionMode.VERY_AGGRESSIVE)
+
+        val fragments = fvad.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
+            .filterIsInstance<DetectedSpeech.Detected.Complete>().size
 
         fvad.reset()
 
-        assertEquals(3, fragments)
+        assertEquals(10, fragments)
     }
 }

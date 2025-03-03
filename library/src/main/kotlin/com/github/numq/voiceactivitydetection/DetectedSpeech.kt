@@ -1,35 +1,39 @@
 package com.github.numq.voiceactivitydetection
 
 sealed interface DetectedSpeech {
-    val bytes: ByteArray
+    data object Nothing : DetectedSpeech
 
-    data class Complete(override val bytes: ByteArray) : DetectedSpeech {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
+    sealed interface Detected : DetectedSpeech {
+        val bytes: ByteArray
 
-            other as Complete
+        data class Segment(override val bytes: ByteArray) : Detected {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (javaClass != other?.javaClass) return false
 
-            return bytes.contentEquals(other.bytes)
+                other as Segment
+
+                return bytes.contentEquals(other.bytes)
+            }
+
+            override fun hashCode(): Int {
+                return bytes.contentHashCode()
+            }
         }
 
-        override fun hashCode(): Int {
-            return bytes.contentHashCode()
-        }
-    }
+        data class Complete(override val bytes: ByteArray) : Detected {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (javaClass != other?.javaClass) return false
 
-    data class Segment(override val bytes: ByteArray) : DetectedSpeech {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
+                other as Complete
 
-            other as Segment
+                return bytes.contentEquals(other.bytes)
+            }
 
-            return bytes.contentEquals(other.bytes)
-        }
-
-        override fun hashCode(): Int {
-            return bytes.contentHashCode()
+            override fun hashCode(): Int {
+                return bytes.contentHashCode()
+            }
         }
     }
 }

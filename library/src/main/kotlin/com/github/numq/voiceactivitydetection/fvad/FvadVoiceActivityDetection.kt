@@ -5,10 +5,14 @@ import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.calculateChunkSize
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.downmixToMono
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.resample
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import java.io.ByteArrayOutputStream
 
 internal class FvadVoiceActivityDetection(
     private val nativeFvadVoiceActivityDetection: NativeFvadVoiceActivityDetection,
+    private val minSpeechDurationMillis: Long,
+    private val minSilenceDurationMillis: Long,
 ) : VoiceActivityDetection.Fvad {
     private companion object {
         const val MINIMUM_CHUNK_MILLIS = 30
@@ -35,12 +39,17 @@ internal class FvadVoiceActivityDetection(
         this@FvadVoiceActivityDetection.mode = mode
     }
 
-    override suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int) = runCatching {
+    override suspend fun detect(
+        pcmBytes: ByteArray,
+        sampleRate: Int,
+        channels: Int,
+        isContinuous: Boolean,
+    ) = runCatching {
         require(sampleRate > 0) { "Sample rate must be greater than 0" }
 
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching emptyList()
+        if (pcmBytes.isEmpty()) return@runCatching emptyFlow()
 
         val chunkSize = calculateChunkSize(
             sampleRate = sampleRate,
@@ -48,50 +57,76 @@ internal class FvadVoiceActivityDetection(
             millis = MINIMUM_CHUNK_MILLIS
         )
 
-        var isLastFragmentComplete = false
+        val minSpeechSize = calculateChunkSize(
+            sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+            channels = VoiceActivityDetection.CHANNELS,
+            millis = minSpeechDurationMillis.toInt()
+        )
 
-        val chunks = pcmBytes.asSequence().chunked(chunkSize)
+        val chunks = pcmBytes.asSequence().chunked(chunkSize).iterator()
 
-        val lastIndex = chunks.toList().lastIndex
+        var silenceDurationMillis = 0
 
-        val detections = mutableListOf<DetectedSpeech>()
+        var isSpeechOngoing = false
 
-        ByteArrayOutputStream().use { baos ->
-            chunks.forEachIndexed { index, chunk ->
-                val monoChunk = downmixToMono(inputData = chunk.toByteArray(), channels = channels)
+        flow {
+            ByteArrayOutputStream().use { baos ->
+                while (chunks.hasNext()) {
+                    val chunk = chunks.next()
 
-                val resampledChunk = resample(
-                    inputData = monoChunk,
-                    channels = CHANNELS_MONO,
-                    inputSampleRate = sampleRate,
-                    outputSampleRate = VoiceActivityDetection.SAMPLE_RATE
-                )
+                    val monoChunk = downmixToMono(inputData = chunk.toByteArray(), channels = channels)
 
-                val paddedChunkSize = calculateChunkSize(
-                    sampleRate = VoiceActivityDetection.SAMPLE_RATE,
-                    channels = VoiceActivityDetection.CHANNELS,
-                    millis = MINIMUM_CHUNK_MILLIS
-                )
+                    val resampledChunk = resample(
+                        inputData = monoChunk,
+                        channels = CHANNELS_MONO,
+                        inputSampleRate = sampleRate,
+                        outputSampleRate = VoiceActivityDetection.SAMPLE_RATE
+                    )
 
-                val isSpeechDetected = nativeFvadVoiceActivityDetection.process(resampledChunk.copyOf(paddedChunkSize))
-                    .takeIf { it in 0..1 }?.let { it == 1 }
+                    val paddedChunkSize = calculateChunkSize(
+                        sampleRate = VoiceActivityDetection.SAMPLE_RATE,
+                        channels = VoiceActivityDetection.CHANNELS,
+                        millis = MINIMUM_CHUNK_MILLIS
+                    )
 
-                requireNotNull(isSpeechDetected) { "Processing failed at chunk $index" }
+                    val isSpeechDetected = nativeFvadVoiceActivityDetection.process(
+                        resampledChunk.copyOf(paddedChunkSize)
+                    ).takeIf { it in 0..1 }?.let { it == 1 }
 
-                if (isSpeechDetected) {
-                    baos.write(chunk.toByteArray().copyOf(chunkSize))
+                    requireNotNull(isSpeechDetected) { "Failed to process input" }
 
-                    if (index == lastIndex) {
-                        detections.add(DetectedSpeech.Segment(bytes = baos.toByteArray()))
+                    if (isSpeechDetected) {
+                        baos.write(chunk.toByteArray().copyOf(chunkSize))
+
+                        silenceDurationMillis = 0
+
+                        if (baos.size() >= minSpeechSize) {
+                            isSpeechOngoing = true
+                        }
+                    } else {
+                        silenceDurationMillis += MINIMUM_CHUNK_MILLIS
+
+                        if (silenceDurationMillis >= minSilenceDurationMillis && baos.size() >= minSpeechSize) {
+                            emit(DetectedSpeech.Detected.Complete(bytes = baos.toByteArray()))
+
+                            baos.reset()
+
+                            isSpeechOngoing = false
+                        }
+
+                        if (!isSpeechOngoing) {
+                            emit(DetectedSpeech.Nothing)
+                        }
                     }
-                } else if (baos.size() > 0) {
-                    detections.add(DetectedSpeech.Complete(bytes = baos.toByteArray()))
+                }
 
-                    baos.reset()
+                if (baos.size() >= minSpeechSize) {
+                    emit(
+                        if (isContinuous) DetectedSpeech.Detected.Segment(baos.toByteArray())
+                        else DetectedSpeech.Detected.Complete(baos.toByteArray())
+                    )
                 }
             }
-
-            detections
         }
     }
 

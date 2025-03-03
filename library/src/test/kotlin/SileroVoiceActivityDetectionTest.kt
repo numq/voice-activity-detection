@@ -1,4 +1,6 @@
+import com.github.numq.voiceactivitydetection.DetectedSpeech
 import com.github.numq.voiceactivitydetection.VoiceActivityDetection
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -34,7 +36,10 @@ class SileroVoiceActivityDetectionTest {
                 sampleRates.forEach { sampleRate ->
                     val pcmBytes = generateSilence(sampleRate, channels, duration)
 
-                    assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
+                    assertFalse(
+                        silero.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
+                            .filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
+                    )
 
                     silero.reset()
                 }
@@ -48,7 +53,10 @@ class SileroVoiceActivityDetectionTest {
         val sampleRate = 22_050
         val channels = 1
 
-        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
+        assertTrue(
+            silero.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
+                .filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
+        )
 
         silero.reset()
     }
@@ -59,10 +67,11 @@ class SileroVoiceActivityDetectionTest {
         val sampleRate = 22_050
         val channels = 1
 
-        val fragments = silero.detect(pcmBytes, sampleRate, channels).getOrThrow().size
+        val fragments = silero.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
+            .filterIsInstance<DetectedSpeech.Detected.Complete>().size
 
         silero.reset()
 
-        assertEquals(3, fragments)
+        assertEquals(10, fragments)
     }
 }
