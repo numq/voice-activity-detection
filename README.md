@@ -4,6 +4,22 @@ JVM library for voice activity detection written in Kotlin based on the C
 library [libfvad](https://github.com/dpirch/libfvad) and based on the ML
 model [Silero](https://github.com/snakers4/silero-vad)
 
+### See also
+
+- [Stretch](https://github.com/numq/stretch) *to change the speed of audio without changing the pitch*
+
+
+- [Speech recognition](https://github.com/numq/speech-recognition) *to transcribe audio to text*
+
+
+- [Speech generation](https://github.com/numq/speech-generation) *to generate voice audio from text*
+
+
+- [Text generation](https://github.com/numq/text-generation) *to generate text from prompt*
+
+
+- [Noise reduction](https://github.com/numq/noise-reduction) *to remove noise from audio*
+
 ## When to use
 
 > [!NOTE]
@@ -55,7 +71,7 @@ voice-controlled systems.
 
 ### TL;DR
 
-- Call `detect` to process the input data
+- Call `detect` to process the input data, use `isContinuous = true` with streaming audio
 
 ### Step-by-step
 
