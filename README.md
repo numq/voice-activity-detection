@@ -56,9 +56,6 @@ voice-controlled systems.
 ### TL;DR
 
 - Call `detect` to process the input data
-- After calling `detect`, check `isLastFragmentComplete` in the result to decide whether to:
-    - Use the last fragment directly (if `isLastFragmentComplete` is **true**)
-    - Cache the fragment for further processing (if `isLastFragmentComplete` is **false**)
 
 ### Step-by-step
 

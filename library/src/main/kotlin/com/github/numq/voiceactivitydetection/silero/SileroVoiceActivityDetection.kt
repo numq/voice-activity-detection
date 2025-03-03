@@ -1,6 +1,6 @@
 package com.github.numq.voiceactivitydetection.silero
 
-import com.github.numq.voiceactivitydetection.DetectionResult
+import com.github.numq.voiceactivitydetection.DetectedSpeech
 import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.calculateChunkSize
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.downmixToMono
@@ -14,6 +14,7 @@ internal class SileroVoiceActivityDetection(
 ) : VoiceActivityDetection.Silero {
     private companion object {
         const val MINIMUM_CHUNK_MILLIS = 32
+        const val MIN_SILENCE_DURATION_MILLIS = 200
         const val CHANNELS_MONO = 1
     }
 
@@ -34,10 +35,7 @@ internal class SileroVoiceActivityDetection(
 
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(
-            fragments = emptyList(),
-            isLastFragmentComplete = true
-        )
+        if (pcmBytes.isEmpty()) return@runCatching emptyList()
 
         val chunkSize = calculateChunkSize(
             sampleRate = sampleRate,
@@ -45,13 +43,13 @@ internal class SileroVoiceActivityDetection(
             millis = MINIMUM_CHUNK_MILLIS
         )
 
-        var isLastFragmentComplete = false
-
         val chunks = pcmBytes.asSequence().chunked(chunkSize)
 
         val lastIndex = chunks.toList().lastIndex
 
-        val fragments = mutableListOf<ByteArray>()
+        val detections = mutableListOf<DetectedSpeech>()
+
+        var silenceDurationMs = 0
 
         ByteArrayOutputStream().use { baos ->
             chunks.forEachIndexed { index, chunk ->
@@ -76,32 +74,32 @@ internal class SileroVoiceActivityDetection(
                     ((paddedResampledChunk[i * 2].toInt() and 0xFF) or (paddedResampledChunk[i * 2 + 1].toInt() shl 8)) / 32767f
                 }
 
-                val result = model.process(arrayOf(floatSamples)).getOrThrow().firstOrNull()?.let { it >= threshold }
+                val isSpeechDetected = model.process(arrayOf(floatSamples)).getOrThrow().firstOrNull()?.let {
+                    it >= threshold
+                }
 
-                requireNotNull(result) { "Processing failed at chunk $index" }
+                requireNotNull(isSpeechDetected) { "Processing failed at chunk $index" }
 
-                if (result) {
+                if (isSpeechDetected) {
                     baos.write(chunk.toByteArray().copyOf(chunkSize))
 
+                    silenceDurationMs = 0
+
                     if (index == lastIndex) {
-                        fragments.add(baos.toByteArray())
+                        detections.add(DetectedSpeech.Segment(bytes = baos.toByteArray()))
+                    }
+                } else {
+                    silenceDurationMs += MINIMUM_CHUNK_MILLIS
+
+                    if (silenceDurationMs >= MIN_SILENCE_DURATION_MILLIS && baos.size() > 0) {
+                        detections.add(DetectedSpeech.Complete(bytes = baos.toByteArray()))
 
                         baos.reset()
-
-                        isLastFragmentComplete = true
-                    }
-                } else if (baos.size() > 0) {
-                    fragments.add(baos.toByteArray())
-
-                    baos.reset()
-
-                    if (index == lastIndex) {
-                        isLastFragmentComplete = false
                     }
                 }
             }
 
-            DetectionResult(fragments = fragments, isLastFragmentComplete = isLastFragmentComplete)
+            detections
         }
     }
 

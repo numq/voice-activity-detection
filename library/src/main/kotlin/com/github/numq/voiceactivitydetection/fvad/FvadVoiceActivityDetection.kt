@@ -1,6 +1,6 @@
 package com.github.numq.voiceactivitydetection.fvad
 
-import com.github.numq.voiceactivitydetection.DetectionResult
+import com.github.numq.voiceactivitydetection.DetectedSpeech
 import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.calculateChunkSize
 import com.github.numq.voiceactivitydetection.audio.AudioProcessing.downmixToMono
@@ -40,10 +40,7 @@ internal class FvadVoiceActivityDetection(
 
         require(channels > 0) { "Channel count must be at least 1" }
 
-        if (pcmBytes.isEmpty()) return@runCatching DetectionResult(
-            fragments = emptyList(),
-            isLastFragmentComplete = true
-        )
+        if (pcmBytes.isEmpty()) return@runCatching emptyList()
 
         val chunkSize = calculateChunkSize(
             sampleRate = sampleRate,
@@ -57,7 +54,7 @@ internal class FvadVoiceActivityDetection(
 
         val lastIndex = chunks.toList().lastIndex
 
-        val fragments = mutableListOf<ByteArray>()
+        val detections = mutableListOf<DetectedSpeech>()
 
         ByteArrayOutputStream().use { baos ->
             chunks.forEachIndexed { index, chunk ->
@@ -76,34 +73,25 @@ internal class FvadVoiceActivityDetection(
                     millis = MINIMUM_CHUNK_MILLIS
                 )
 
-                when (nativeFvadVoiceActivityDetection.process(resampledChunk.copyOf(paddedChunkSize))) {
-                    0 -> if (baos.size() > 0) {
-                        fragments.add(baos.toByteArray())
+                val isSpeechDetected = nativeFvadVoiceActivityDetection.process(resampledChunk.copyOf(paddedChunkSize))
+                    .takeIf { it in 0..1 }?.let { it == 1 }
 
-                        baos.reset()
+                requireNotNull(isSpeechDetected) { "Processing failed at chunk $index" }
 
-                        if (index == lastIndex) {
-                            isLastFragmentComplete = false
-                        }
+                if (isSpeechDetected) {
+                    baos.write(chunk.toByteArray().copyOf(chunkSize))
+
+                    if (index == lastIndex) {
+                        detections.add(DetectedSpeech.Segment(bytes = baos.toByteArray()))
                     }
+                } else if (baos.size() > 0) {
+                    detections.add(DetectedSpeech.Complete(bytes = baos.toByteArray()))
 
-                    1 -> {
-                        baos.write(chunk.toByteArray().copyOf(chunkSize))
-
-                        if (index == lastIndex) {
-                            fragments.add(baos.toByteArray())
-
-                            baos.reset()
-
-                            isLastFragmentComplete = true
-                        }
-                    }
-
-                    else -> error("Unable to process input at chunk $index")
+                    baos.reset()
                 }
             }
 
-            DetectionResult(fragments = fragments, isLastFragmentComplete = isLastFragmentComplete)
+            detections
         }
     }
 

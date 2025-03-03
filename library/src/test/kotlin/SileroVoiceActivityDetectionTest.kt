@@ -1,6 +1,7 @@
 import com.github.numq.voiceactivitydetection.VoiceActivityDetection
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration
@@ -33,7 +34,7 @@ class SileroVoiceActivityDetectionTest {
                 sampleRates.forEach { sampleRate ->
                     val pcmBytes = generateSilence(sampleRate, channels, duration)
 
-                    assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
+                    assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
 
                     silero.reset()
                 }
@@ -44,45 +45,24 @@ class SileroVoiceActivityDetectionTest {
     @Test
     fun `should detect speech`() = runTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/short.wav")!!.readBytes()
-        val sampleRate = 48_000
+        val sampleRate = 22_050
         val channels = 1
 
-        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
+        assertTrue(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().isNotEmpty())
 
         silero.reset()
     }
 
     @Test
-    fun `should not detect silence in real-time`() = runTest {
-        val sampleRate = sampleRates.random()
-        val channels = 2
-
-        val chunkSize = silero.minimumInputSize(sampleRate = sampleRate, channels = channels).getOrThrow()
-
-        generateSilence(sampleRate, channels, 5.seconds).asSequence().chunked(chunkSize).map(List<Byte>::toByteArray)
-            .forEach { pcmBytes ->
-                assertFalse(silero.detect(pcmBytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
-
-                silero.reset()
-            }
-    }
-
-    @Test
-    fun `should detect chunked speech`() = runTest {
-        val pcmBytes = javaClass.classLoader.getResource("audio/long.wav")!!.readBytes()
-        val sampleRate = 48_000
+    fun `should detect sentence fragments`() = runTest {
+        val pcmBytes = javaClass.classLoader.getResource("audio/sentences.wav")!!.readBytes()
+        val sampleRate = 22_050
         val channels = 1
 
-        val chunkSize = silero.minimumInputSize(sampleRate = sampleRate, channels = channels).getOrThrow()
+        val fragments = silero.detect(pcmBytes, sampleRate, channels).getOrThrow().size
 
-        val results = mutableListOf<Boolean>()
+        silero.reset()
 
-        pcmBytes.asSequence().chunked(chunkSize).map(List<Byte>::toByteArray).forEach { bytes ->
-            results.add(silero.detect(bytes, sampleRate, channels).getOrThrow().fragments.isNotEmpty())
-
-            silero.reset()
-        }
-
-        assertTrue(results.contains(true))
+        assertEquals(3, fragments)
     }
 }

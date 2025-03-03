@@ -41,10 +41,9 @@ interface VoiceActivityDetection : AutoCloseable {
      * @param pcmBytes the audio data in PCM format.
      * @param sampleRate the sampling rate of the audio data in Hz.
      * @param channels the number of audio channels (e.g., 1 for mono, 2 for stereo).
-     * @return a [Result] containing a [DetectionResult], which includes a list of detected speech fragments
-     * and a boolean indicating whether the last fragment is complete.
+     * @return [Result] containing a list of [DetectedSpeech], which may be a complete speech or a segment to be buffered and merged with the next detected speech.
      */
-    suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int): Result<DetectionResult>
+    suspend fun detect(pcmBytes: ByteArray, sampleRate: Int, channels: Int): Result<List<DetectedSpeech>>
 
     /**
      * Resets the voice activity detection internal state.
