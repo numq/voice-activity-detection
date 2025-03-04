@@ -1,8 +1,7 @@
 # Voice Activity Detection
 
 JVM library for voice activity detection written in Kotlin based on the C
-library [libfvad](https://github.com/dpirch/libfvad) and based on the ML
-model [Silero](https://github.com/snakers4/silero-vad)
+library [libfvad](https://github.com/dpirch/libfvad) and ML model [Silero](https://github.com/snakers4/silero-vad)
 
 ### See also
 
