@@ -99,7 +99,7 @@ voice-controlled systems.
 - Call `minimumInputSize` to get the audio producer buffer size for real-time detection
 
 
-- Call `detect` passing the input data, sample rate, and number of channels as arguments
+- Call `detect` passing the input data, number of channels and sample rate as arguments
 
 
 - Call `reset` to reset the internal state - for example when the audio source changes
