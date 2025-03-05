@@ -19,16 +19,16 @@ internal class FvadVoiceActivityDetection(
         const val CHANNELS_MONO = 1
     }
 
-    override fun inputSizeForMillis(sampleRate: Int, channels: Int, millis: Long) = runCatching {
-        val minSize = minimumInputSize(sampleRate = sampleRate, channels = channels).getOrThrow()
+    override fun inputSizeForMillis(channels: Int, sampleRate: Int, millis: Long) = runCatching {
+        val minSize = minimumInputSize(channels = channels, sampleRate = sampleRate).getOrThrow()
 
         val factor = (millis + MINIMUM_CHUNK_MILLIS - 1) / MINIMUM_CHUNK_MILLIS
 
         (factor * minSize).toInt()
     }
 
-    override fun minimumInputSize(sampleRate: Int, channels: Int) = runCatching {
-        calculateChunkSize(sampleRate = sampleRate, channels = channels, millis = MINIMUM_CHUNK_MILLIS)
+    override fun minimumInputSize(channels: Int, sampleRate: Int) = runCatching {
+        calculateChunkSize(channels = channels, sampleRate = sampleRate, millis = MINIMUM_CHUNK_MILLIS)
     }
 
     override var mode = FvadVoiceActivityDetectionMode.QUALITY
@@ -41,25 +41,25 @@ internal class FvadVoiceActivityDetection(
 
     override suspend fun detect(
         pcmBytes: ByteArray,
-        sampleRate: Int,
         channels: Int,
+        sampleRate: Int,
         isContinuous: Boolean,
     ) = runCatching {
-        require(sampleRate > 0) { "Sample rate must be greater than 0" }
-
         require(channels > 0) { "Channel count must be at least 1" }
+
+        require(sampleRate > 0) { "Sample rate must be greater than 0" }
 
         if (pcmBytes.isEmpty()) return@runCatching emptyFlow()
 
         val chunkSize = calculateChunkSize(
-            sampleRate = sampleRate,
             channels = channels,
+            sampleRate = sampleRate,
             millis = MINIMUM_CHUNK_MILLIS
         )
 
         val minSpeechSize = calculateChunkSize(
-            sampleRate = VoiceActivityDetection.SAMPLE_RATE,
             channels = VoiceActivityDetection.CHANNELS,
+            sampleRate = VoiceActivityDetection.SAMPLE_RATE,
             millis = minSpeechDurationMillis.toInt()
         )
 
@@ -84,8 +84,8 @@ internal class FvadVoiceActivityDetection(
                     )
 
                     val paddedChunkSize = calculateChunkSize(
-                        sampleRate = VoiceActivityDetection.SAMPLE_RATE,
                         channels = VoiceActivityDetection.CHANNELS,
+                        sampleRate = VoiceActivityDetection.SAMPLE_RATE,
                         millis = MINIMUM_CHUNK_MILLIS
                     )
 

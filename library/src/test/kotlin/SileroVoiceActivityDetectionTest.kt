@@ -26,7 +26,7 @@ class SileroVoiceActivityDetectionTest {
 
     private val sampleRates = arrayOf(4_000, 8_000, 32_000, 44_100, 48_000, 88_200, 96_000, 176_400, 192_000)
 
-    private fun generateSilence(sampleRate: Int, channels: Int, duration: Duration) =
+    private fun generateSilence(channels: Int, sampleRate: Int, duration: Duration) =
         ByteArray((sampleRate * (duration.inWholeMilliseconds / 1_000.0) * channels * 2).toInt())
 
     @Test
@@ -34,11 +34,14 @@ class SileroVoiceActivityDetectionTest {
         durations.forEach { duration ->
             for (channels in 1..2) {
                 sampleRates.forEach { sampleRate ->
-                    val pcmBytes = generateSilence(sampleRate, channels, duration)
+                    val pcmBytes = generateSilence(channels = channels, sampleRate = sampleRate, duration = duration)
 
                     assertFalse(
-                        silero.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
-                            .filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
+                        silero.detect(
+                            pcmBytes = pcmBytes,
+                            channels = channels,
+                            sampleRate = sampleRate
+                        ).getOrThrow().toList().filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
                     )
 
                     silero.reset()
@@ -50,12 +53,15 @@ class SileroVoiceActivityDetectionTest {
     @Test
     fun `should detect speech`() = runTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/short.wav")!!.readBytes()
-        val sampleRate = 22_050
         val channels = 1
+        val sampleRate = 22_050
 
         assertTrue(
-            silero.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
-                .filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
+            silero.detect(
+                pcmBytes = pcmBytes,
+                channels = channels,
+                sampleRate = sampleRate
+            ).getOrThrow().toList().filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
         )
 
         silero.reset()
@@ -64,11 +70,14 @@ class SileroVoiceActivityDetectionTest {
     @Test
     fun `should detect sentence fragments`() = runTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/sentences.wav")!!.readBytes()
-        val sampleRate = 22_050
         val channels = 1
+        val sampleRate = 22_050
 
-        val fragments = silero.detect(pcmBytes, sampleRate, channels).getOrThrow().toList()
-            .filterIsInstance<DetectedSpeech.Detected.Complete>().size
+        val fragments = silero.detect(
+            pcmBytes = pcmBytes,
+            channels = channels,
+            sampleRate = sampleRate
+        ).getOrThrow().toList().filterIsInstance<DetectedSpeech.Detected.Complete>().size
 
         silero.reset()
 

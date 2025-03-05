@@ -19,21 +19,21 @@ interface VoiceActivityDetection : AutoCloseable {
     /**
      * Returns the minimum possible input size for the given number of milliseconds.
      *
-     * @param sampleRate the sampling rate of the audio data in Hz.
      * @param channels the number of audio channels.
+     * @param sampleRate the sampling rate of the audio data in Hz.
      * @param millis the duration in milliseconds.
      * @return a [Result] containing the minimum chunk size in bytes.
      */
-    fun inputSizeForMillis(sampleRate: Int, channels: Int, millis: Long): Result<Int>
+    fun inputSizeForMillis(channels: Int, sampleRate: Int, millis: Long): Result<Int>
 
     /**
      * Returns the minimum effective chunk size - the size at which there is no need to fill the input data with silence.
      *
-     * @param sampleRate the sampling rate of the audio data in Hz.
      * @param channels the number of audio channels.
+     * @param sampleRate the sampling rate of the audio data in Hz.
      * @return a [Result] containing the minimum chunk size in bytes.
      */
-    fun minimumInputSize(sampleRate: Int, channels: Int): Result<Int>
+    fun minimumInputSize(channels: Int, sampleRate: Int): Result<Int>
 
     /**
      * Detects voice activity in the given PCM audio data.
@@ -42,15 +42,15 @@ interface VoiceActivityDetection : AutoCloseable {
      * To maximize efficiency and avoid padding, ensure that the input data size is equal to [minimumInputSize].
      *
      * @param pcmBytes the audio data in PCM format.
-     * @param sampleRate the sampling rate of the audio data in Hz.
      * @param channels the number of audio channels (e.g., 1 for mono, 2 for stereo).
+     * @param sampleRate the sampling rate of the audio data in Hz.
      * @param isContinuous indicates whether a call is made for continuous input. If false, the last detected speech will never be a segment. Default is `false`.
      * @return [Result] containing a flow of [DetectedSpeech], which may be a complete speech or a segment to be buffered and merged with the next detected speech.
      */
     suspend fun detect(
         pcmBytes: ByteArray,
-        sampleRate: Int,
         channels: Int,
+        sampleRate: Int,
         isContinuous: Boolean = false,
     ): Result<Flow<DetectedSpeech>>
 

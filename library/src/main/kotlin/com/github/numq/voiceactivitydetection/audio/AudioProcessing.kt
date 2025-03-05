@@ -10,6 +10,7 @@ internal object AudioProcessing {
         if (channels == 1) return inputData
 
         require(channels > 0) { "Number of channels must be greater than 0" }
+
         require(inputData.size % (channels * 2) == 0) { "PCM byte size must be a multiple of the frame size (channels * 2)" }
 
         val monoBytes = ByteArray(inputData.size / channels)
@@ -78,10 +79,10 @@ internal object AudioProcessing {
         return outputData
     }
 
-    fun calculateChunkSize(sampleRate: Int, channels: Int, millis: Int): Int {
-        require(sampleRate > 0) { "Sample rate must be greater than 0" }
-
+    fun calculateChunkSize(channels: Int, sampleRate: Int, millis: Int): Int {
         require(channels > 0) { "Number of channels must be greater than 0" }
+
+        require(sampleRate > 0) { "Sample rate must be greater than 0" }
 
         return (((sampleRate * millis) / 1000) * 2 * channels + 3) and -4
     }
