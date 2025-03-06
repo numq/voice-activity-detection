@@ -92,19 +92,19 @@ fun InteractionScreen(
             null -> return@LaunchedEffect
 
             else -> coroutineScope.launch {
-                val channels = device.channels
-
                 val sampleRate = device.sampleRate
+
+                val channels = device.channels
 
                 val chunkSize = when (selectedVoiceActivityDetectionItem) {
                     VoiceActivityDetectionItem.FVAD -> fvad.minimumInputSize(
+                        sampleRate = sampleRate,
                         channels = channels,
-                        sampleRate = sampleRate
                     )
 
                     VoiceActivityDetectionItem.SILERO -> silero.minimumInputSize(
+                        sampleRate = sampleRate,
                         channels = channels,
-                        sampleRate = sampleRate
                     )
                 }
 
@@ -122,8 +122,8 @@ fun InteractionScreen(
                         VoiceActivityDetectionItem.SILERO -> silero
                     }.detect(
                         pcmBytes = pcmBytes,
+                        sampleRate = sampleRate,
                         channels = channels,
-                        sampleRate = sampleRate
                     ).onFailure(handleThrowable).getOrThrow()
 
                     speechBytes.collect { detectedSpeech ->

@@ -36,7 +36,7 @@ class FvadVoiceActivityDetectionTest {
 
     private val sampleRates = arrayOf(4_000, 8_000, 32_000, 44_100, 48_000, 88_200, 96_000, 176_400, 192_000)
 
-    private fun generateSilence(channels: Int, sampleRate: Int, duration: Duration) =
+    private fun generateSilence(sampleRate: Int, channels: Int, duration: Duration) =
         ByteArray((sampleRate * (duration.inWholeMilliseconds / 1_000.0) * channels * 2).toInt())
 
     @Test
@@ -48,16 +48,16 @@ class FvadVoiceActivityDetectionTest {
                 for (channels in 1..2) {
                     sampleRates.forEach { sampleRate ->
                         val pcmBytes = generateSilence(
-                            channels = channels,
                             sampleRate = sampleRate,
+                            channels = channels,
                             duration = duration
                         )
 
                         assertFalse(
                             fvad.detect(
                                 pcmBytes = pcmBytes,
+                                sampleRate = sampleRate,
                                 channels = channels,
-                                sampleRate = sampleRate
                             ).getOrThrow().toList().filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
                         )
 
@@ -71,8 +71,8 @@ class FvadVoiceActivityDetectionTest {
     @Test
     fun `should detect speech`() = runTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/short.wav")!!.readBytes()
-        val channels = 1
         val sampleRate = 22_050
+        val channels = 1
 
         FvadVoiceActivityDetectionMode.entries.forEach { mode ->
             fvad.changeMode(mode).getOrThrow()
@@ -80,8 +80,8 @@ class FvadVoiceActivityDetectionTest {
             assertTrue(
                 fvad.detect(
                     pcmBytes = pcmBytes,
+                    sampleRate = sampleRate,
                     channels = channels,
-                    sampleRate = sampleRate
                 ).getOrThrow().toList().filterIsInstance<DetectedSpeech.Detected>().isNotEmpty()
             )
 
@@ -92,15 +92,15 @@ class FvadVoiceActivityDetectionTest {
     @Test
     fun `should detect sentence fragments`() = runTest {
         val pcmBytes = javaClass.classLoader.getResource("audio/sentences.wav")!!.readBytes()
-        val channels = 1
         val sampleRate = 22_050
+        val channels = 1
 
         fvad.changeMode(FvadVoiceActivityDetectionMode.VERY_AGGRESSIVE)
 
         val fragments = fvad.detect(
             pcmBytes = pcmBytes,
+            sampleRate = sampleRate,
             channels = channels,
-            sampleRate = sampleRate
         ).getOrThrow().toList().filterIsInstance<DetectedSpeech.Detected.Complete>().size
 
         fvad.reset()
