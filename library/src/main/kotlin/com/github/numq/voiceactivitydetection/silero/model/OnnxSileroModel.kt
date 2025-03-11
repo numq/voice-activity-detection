@@ -54,11 +54,11 @@ internal class OnnxSileroModel(modelPath: String, targetSampleRate: Int) : Siler
                     "sr" to srTensor
                 )
 
-                session.run(inputs).use { ortOutputs ->
-                    val output = (ortOutputs[0].value as? Array<FloatArray>)?.firstOrNull()
+                session.run(inputs).use { result ->
+                    val output = (result[0].value as? Array<FloatArray>)?.firstOrNull()
                         ?: throw IllegalStateException("Model output is null or invalid.")
 
-                    state = (ortOutputs[1].value as? Array<Array<FloatArray>>)
+                    state = (result[1].value as? Array<Array<FloatArray>>)
                         ?: throw IllegalStateException("Model state output is null or invalid.")
 
                     for (i in combinedInput.indices) {
@@ -92,5 +92,6 @@ internal class OnnxSileroModel(modelPath: String, targetSampleRate: Int) : Siler
     override fun close() {
         srTensor.close()
         session.close()
+        env.close()
     }
 }
